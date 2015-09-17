@@ -12,7 +12,10 @@ public class ShearerModel extends SteamNSteelModel
 
     public ShearerModel() { model = AdvancedModelLoader.loadModel(MODEL); }
 
-    public void renderAll() { model.renderAll(); }
-    public void render
+    public void render() { model.renderAll(); }
 
+    public void renderArms() {model.renderPart("arms_Cube.006");}
+    public void renderBody() {model.renderPart("Sides_Cube.005");}
+    public void renderWheel() {model.renderPart("wheel_Circle");}
+    public void renderBobby() {model.renderPart("topBlock_Cube.007");}
 }

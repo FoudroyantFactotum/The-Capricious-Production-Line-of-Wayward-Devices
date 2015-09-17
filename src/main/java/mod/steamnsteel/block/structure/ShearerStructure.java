@@ -35,10 +35,10 @@ public class ShearerStructure extends SteamNSteelStructureBlock implements ITile
 
         builder.assignConstructionBlocks(
                 new String[]{
-                        "pps"
+                        "spp"
                 },
                 new String[]{
-                        "pps"
+                        "spp"
                 }
         );
 
@@ -53,9 +53,10 @@ public class ShearerStructure extends SteamNSteelStructureBlock implements ITile
                 }
         );
 
-       /* builder.setCollisionBoxes(
-                new float[]{0.7f,0.0f,0.7f, 2.3f,0.5f,2.3f}
-        );*/
+        builder.setCollisionBoxes(
+                new float[]{0.0f,0.0f,0.0f, 1.2f,1.3f,1.0f},
+                new float[]{1.2f,0.2f,0.0f, 3.0f,1.8f,1.0f}
+        );
 
         return builder;
     }
