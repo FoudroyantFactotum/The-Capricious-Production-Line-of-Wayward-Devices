@@ -8,6 +8,9 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidTankInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -244,5 +247,35 @@ public class ShearerTE extends SteamNSteelStructureTE
                 darnSheep = null;
         }
 
+    }
+
+    @Override
+    public boolean canStructureFill(ForgeDirection from, Fluid fluid, TripleCoord blockID) {
+        return false;
+    }
+
+    @Override
+    public boolean canStructureDrain(ForgeDirection from, Fluid fluid, TripleCoord blockID) {
+        return false;
+    }
+
+    @Override
+    public int structureFill(ForgeDirection from, FluidStack resource, boolean doFill, TripleCoord blockID) {
+        return 0;
+    }
+
+    @Override
+    public FluidStack structureDrain(ForgeDirection from, FluidStack resource, boolean doDrain, TripleCoord blockID) {
+        return null;
+    }
+
+    @Override
+    public FluidStack structureDrain(ForgeDirection from, int maxDrain, boolean doDrain, TripleCoord blockID) {
+        return null;
+    }
+
+    @Override
+    public FluidTankInfo[] getStructureTankInfo(ForgeDirection from, TripleCoord blockID) {
+        return new FluidTankInfo[0];
     }
 }
