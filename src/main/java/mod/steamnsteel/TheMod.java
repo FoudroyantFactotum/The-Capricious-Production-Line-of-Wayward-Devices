@@ -19,10 +19,6 @@ package mod.steamnsteel;
 import com.google.common.base.Optional;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.event.FMLInitializationEvent;
-import cpw.mods.fml.common.event.FMLPostInitializationEvent;
-import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.*;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import mod.steamnsteel.api.crafting.CraftingManager;
@@ -34,6 +30,7 @@ import mod.steamnsteel.gui.GuiHandler;
 import mod.steamnsteel.library.ModBlock;
 import mod.steamnsteel.library.ModBlockParts;
 import mod.steamnsteel.library.ModItem;
+import mod.steamnsteel.midi.SongList;
 import mod.steamnsteel.proxy.Proxies;
 import mod.steamnsteel.structure.registry.StructureRegistry;
 import mod.steamnsteel.utility.ModNetwork;
@@ -101,6 +98,7 @@ public class TheMod
         WorldGen.init();
         ModBlock.registerTileEntities();
         StructureRegistry.loadRegisteredPatterns();
+        SongList.loadSongSheets();
     }
 
     @SuppressWarnings("UnusedParameters")

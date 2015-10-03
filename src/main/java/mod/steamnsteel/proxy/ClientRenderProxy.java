@@ -27,10 +27,7 @@ import mod.steamnsteel.client.renderer.item.*;
 import mod.steamnsteel.client.renderer.tileentity.*;
 import mod.steamnsteel.library.ModBlock;
 import mod.steamnsteel.tileentity.*;
-import mod.steamnsteel.tileentity.structure.BallMillTE;
-import mod.steamnsteel.tileentity.structure.BlastFurnaceTE;
-import mod.steamnsteel.tileentity.structure.BoilerTE;
-import mod.steamnsteel.tileentity.structure.ShearerTE;
+import mod.steamnsteel.tileentity.structure.*;
 import net.minecraft.item.Item;
 import net.minecraftforge.client.MinecraftForgeClient;
 
@@ -71,6 +68,7 @@ public class ClientRenderProxy extends RenderProxy
         ClientRegistry.bindTileEntitySpecialRenderer(BlastFurnaceTE.class, new BlastFurnaceTESR());
         ClientRegistry.bindTileEntitySpecialRenderer(BoilerTE.class, new BoilerTESR());
         ClientRegistry.bindTileEntitySpecialRenderer(ShearerTE.class, new ShearerTESR());
+        ClientRegistry.bindTileEntitySpecialRenderer(PlayerPianoTE.class, new PlayerPianoTESR());
 
         PipeBlock.setRenderType(RenderingRegistry.getNextAvailableRenderId());
         PipeValveBlock.setRenderType(RenderingRegistry.getNextAvailableRenderId());

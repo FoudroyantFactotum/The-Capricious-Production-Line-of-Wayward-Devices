@@ -1,6 +1,8 @@
 package mod.steamnsteel.tileentity.structure;
 
+import mod.steamnsteel.block.structure.ShearerStructure;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
+import mod.steamnsteel.tileentity.SteamNSteelTE;
 import net.minecraft.block.Block;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.passive.EntitySheep;
@@ -28,6 +30,16 @@ public class ShearerTE extends SteamNSteelStructureTE
     public EntitySheep darnSheep = null;
     public boolean coolDown = false;
     public float armPos = 0.0f;
+
+    public ShearerTE()
+    {
+        //noop
+    }
+
+    public ShearerTE(int meta)
+    {
+        super(meta);
+    }
 
     @Override
     public boolean canStructureInsertItem(int slot, ItemStack item, int side, TripleCoord blockID)
@@ -80,7 +92,7 @@ public class ShearerTE extends SteamNSteelStructureTE
     @Override
     public String getInventoryName()
     {
-        return null;
+        return SteamNSteelTE.containerName(ShearerStructure.NAME);
     }
 
     @Override

@@ -354,11 +354,11 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
                 final Block block = sd.getBlock(local);
                 final int meta = sd.getBlockMetadata(local.x, local.y, local.z);
 
-                /*blockCoord.setBlock(world,
+                blockCoord.setBlock(world,
                         block == null? Blocks.air : block,
                         localToGlobal(meta, block == null ? Blocks.air : block, orientation, false),
-                        0x2);*/
-                blockCoord.setBlock(world,Blocks.air);
+                        0x2);
+                //blockCoord.setBlock(world,Blocks.air);
 
                 world.removeTileEntity(blockCoord.getX(), blockCoord.getY(), blockCoord.getZ());
             }

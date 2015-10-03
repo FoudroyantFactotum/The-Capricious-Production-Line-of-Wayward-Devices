@@ -86,7 +86,6 @@ public abstract class SteamNSteelStructureTE extends SteamNSteelTE implements IS
     {
         return TripleCoord.of(xCoord, yCoord, zCoord);
     }
-
     @Override
     public int getRegHash()
     {
