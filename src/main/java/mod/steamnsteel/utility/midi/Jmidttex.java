@@ -1,4 +1,4 @@
-package mod.steamnsteel.midi;
+package mod.steamnsteel.utility.midi;
 
 import org.lwjgl.opengl.GL11;
 

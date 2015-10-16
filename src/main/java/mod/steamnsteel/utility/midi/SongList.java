@@ -1,4 +1,4 @@
-package mod.steamnsteel.midi;
+package mod.steamnsteel.utility.midi;
 
 import mod.steamnsteel.TheMod;
 import mod.steamnsteel.utility.log.Logger;
@@ -19,7 +19,7 @@ public class SongList
     {
         final TextureManager tm =Minecraft.getMinecraft().getTextureManager();
         loadTextureSafe(tm, "TemptationRag(1909)");
-        loadTextureSafe(tm, "TheSheikOfAraby(1921)");
+        //loadTextureSafe(tm, "TheSheikOfAraby(1921)");
     }
 
     private static void loadTextureSafe(TextureManager tm, String name)

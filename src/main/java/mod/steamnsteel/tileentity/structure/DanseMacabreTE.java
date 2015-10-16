@@ -1,46 +1,38 @@
 package mod.steamnsteel.tileentity.structure;
 
-import mod.steamnsteel.block.structure.PlayerPiano;
+import mod.steamnsteel.block.structure.DanseMacabreStructure;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.tileentity.SteamNSteelTE;
-import mod.steamnsteel.utility.midi.MidiWorker;
-import mod.steamnsteel.utility.midi.SongList;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
 
-public class PlayerPianoTE extends SteamNSteelStructureTE
+public class DanseMacabreTE extends SteamNSteelStructureTE
 {
-    public volatile float[] keyPosY = new float[88];
-    public volatile boolean[] keyIsDown = new boolean[88];
-    public String songLoaded = "TemptationRag(1909)";
-    public ResourceLocation texturePath = SongList.getSongTexturePath(songLoaded);
-    public volatile double songReadHeadPos = 0.0;
-    public MidiWorker midiWorker;
+    public volatile Boolean keepAlive = true;
 
-    public PlayerPianoTE()
+    public volatile double bellRingersPos1 = 0.0;
+    public volatile double bellRingersPos2 = 0.0;
+    public volatile boolean bellRingers1isActive = false;
+    public volatile boolean bellRingers2isActive = false;
+    public volatile boolean whichOneTwoMove = false;
+
+    public volatile double bellAmplitude = 0.0;
+    public volatile double bellValue = 0.0;
+    public volatile double bellAngle = 0.0;
+
+    public DanseMacabreTE()
     {
-        initKeys();
+        //noop
     }
 
-    public PlayerPianoTE(int meta)
+    public DanseMacabreTE (int meta)
     {
         super(meta);
-        initKeys();
-    }
-
-    private void initKeys()
-    {
-        for (int i=0; i< keyPosY.length; ++i)
-        {
-            keyPosY[i] = 0;
-        }
-        midiWorker = new MidiWorker(this);
     }
 
     //================================================================
@@ -80,7 +72,7 @@ public class PlayerPianoTE extends SteamNSteelStructureTE
     @Override
     public String getInventoryName()
     {
-        return SteamNSteelTE.containerName(PlayerPiano.NAME);
+        return SteamNSteelTE.containerName(DanseMacabreStructure.NAME);
     }
 
     @Override

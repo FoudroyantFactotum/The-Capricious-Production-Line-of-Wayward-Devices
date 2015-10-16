@@ -1,46 +1,33 @@
 package mod.steamnsteel.tileentity.structure;
 
-import mod.steamnsteel.block.structure.PlayerPiano;
+import mod.steamnsteel.block.structure.TurkStructure;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.tileentity.SteamNSteelTE;
-import mod.steamnsteel.utility.midi.MidiWorker;
-import mod.steamnsteel.utility.midi.SongList;
+import mod.steamnsteel.utility.boardGame.TurkChess.GameChess;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
 
-public class PlayerPianoTE extends SteamNSteelStructureTE
-{
-    public volatile float[] keyPosY = new float[88];
-    public volatile boolean[] keyIsDown = new boolean[88];
-    public String songLoaded = "TemptationRag(1909)";
-    public ResourceLocation texturePath = SongList.getSongTexturePath(songLoaded);
-    public volatile double songReadHeadPos = 0.0;
-    public MidiWorker midiWorker;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
-    public PlayerPianoTE()
+public class TurkTE extends SteamNSteelStructureTE
+{
+    public final Executor e = Executors.newSingleThreadExecutor();
+    public GameChess chess = new GameChess();
+
+    public TurkTE()
     {
-        initKeys();
+        //noop
     }
 
-    public PlayerPianoTE(int meta)
+    public TurkTE(int meta)
     {
         super(meta);
-        initKeys();
-    }
-
-    private void initKeys()
-    {
-        for (int i=0; i< keyPosY.length; ++i)
-        {
-            keyPosY[i] = 0;
-        }
-        midiWorker = new MidiWorker(this);
     }
 
     //================================================================
@@ -80,7 +67,7 @@ public class PlayerPianoTE extends SteamNSteelStructureTE
     @Override
     public String getInventoryName()
     {
-        return SteamNSteelTE.containerName(PlayerPiano.NAME);
+        return SteamNSteelTE.containerName(TurkStructure.NAME);
     }
 
     @Override
@@ -226,5 +213,11 @@ public class PlayerPianoTE extends SteamNSteelStructureTE
     protected void transformDirectionsOnLoad()
     {
 
+    }
+
+    @Override
+    public String toString()
+    {
+        return "";
     }
 }

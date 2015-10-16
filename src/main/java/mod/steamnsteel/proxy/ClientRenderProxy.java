@@ -69,6 +69,7 @@ public class ClientRenderProxy extends RenderProxy
         ClientRegistry.bindTileEntitySpecialRenderer(BoilerTE.class, new BoilerTESR());
         ClientRegistry.bindTileEntitySpecialRenderer(ShearerTE.class, new ShearerTESR());
         ClientRegistry.bindTileEntitySpecialRenderer(PlayerPianoTE.class, new PlayerPianoTESR());
+        ClientRegistry.bindTileEntitySpecialRenderer(DanseMacabreTE.class, new DanseMacabreTESR());
 
         PipeBlock.setRenderType(RenderingRegistry.getNextAvailableRenderId());
         PipeValveBlock.setRenderType(RenderingRegistry.getNextAvailableRenderId());

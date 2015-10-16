@@ -1,4 +1,4 @@
-package mod.steamnsteel.midi;
+package mod.steamnsteel.utility.midi;
 
 import mod.steamnsteel.tileentity.structure.PlayerPianoTE;
 import mod.steamnsteel.utility.log.Logger;
@@ -110,6 +110,7 @@ public class MidiWorker implements Runnable
         public void send(MidiMessage midiMessage, long l)
         {
             rec.send(midiMessage, l);
+
             if (midiMessage instanceof ShortMessage)
             {
                 final ShortMessage sm = (ShortMessage) midiMessage;
