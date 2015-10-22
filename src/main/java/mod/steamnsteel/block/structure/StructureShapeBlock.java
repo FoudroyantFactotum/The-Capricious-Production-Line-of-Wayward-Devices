@@ -41,7 +41,7 @@ import static mod.steamnsteel.block.SteamNSteelStructureBlock.*;
 import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobalCollisionBoxes;
 import static mod.steamnsteel.utility.Orientation.getdecodedOrientation;
 
-public final class StructureShapeBlock extends SteamNSteelMachineBlock implements ITileEntityProvider
+public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITileEntityProvider
 {
     public static boolean _DEBUG = false;
     public static final String NAME = "structureShape";
@@ -76,7 +76,7 @@ public final class StructureShapeBlock extends SteamNSteelMachineBlock implement
             final TripleCoord mloc = te.getMasterBlockLocation();
             final SteamNSteelStructureBlock sb = StructureRegistry.getStructureBlock(te.getRegHash());
 
-            if (sb == null)
+            if (sb == null || sb.getPattern().getCollisionBoxes() == null)
             {
                 return;
             }
