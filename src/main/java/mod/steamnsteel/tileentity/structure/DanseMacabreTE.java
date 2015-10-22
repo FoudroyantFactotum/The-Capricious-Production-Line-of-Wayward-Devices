@@ -25,6 +25,11 @@ public class DanseMacabreTE extends SteamNSteelStructureTE
     public volatile double bellValue = 0.0;
     public volatile double bellAngle = 0.0;
 
+    public volatile boolean[] smokeOnTimpani = new boolean[88];
+    public volatile boolean[] smokeOnStringEnsemble = new boolean[88];
+    public volatile boolean[] smokeOnFiddle = new boolean[88];
+    public volatile boolean[] smokeOnBass = new boolean[88];
+
     public DanseMacabreTE()
     {
         //noop

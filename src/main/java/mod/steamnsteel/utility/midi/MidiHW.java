@@ -119,10 +119,15 @@ public class MidiHW implements Runnable
                 Collections.sort(midiEventBell, new MetaDataFuture());
                 te.bellRingers1isActive = true;
 
+                int reduceSmoke = 0;
+                int reduceMagic = 0;
+                int reduceFiddle = 0;
+                int reduceBass = 0;
+
                 //play music loop
                 sqr.open();
                 {
-                    sqr.setTickPosition(62110);
+                    //sqr.setTickPosition(62110);
                     sqr.start();
                     while (sqr.isRunning() && Minecraft.getMinecraft().theWorld != null && keepAlive)
                     {
@@ -181,6 +186,50 @@ public class MidiHW implements Runnable
                         //                              O r g a n
                         //=========================================================================
 
+                        synchronized (te.getWorldObj())
+                        {
+                            for (int i = 0; i < te.smokeOnTimpani.length; i++)
+                            {
+                                if (te.smokeOnTimpani[i])
+                                {
+
+                                    if (reduceSmoke++ > 1)
+                                    {
+                                        reduceSmoke = 0;
+                                        smokeIT(2.5, 2.25, 3.5, i / (double) te.smokeOnTimpani.length, "smoke", 0.9, 0);
+                                    }
+                                }
+
+                                if (te.smokeOnStringEnsemble[i])
+                                {
+                                    if (reduceMagic++ > 2)
+                                    {
+                                        reduceMagic = 0;
+                                        smokeIT(2.5, 1.75, 3.5, i / (double) te.smokeOnTimpani.length, "crit", 0.9, 0);
+
+                                    }
+                                }
+
+                                if (te.smokeOnFiddle[i])
+                                {
+                                    if (reduceFiddle++ > 2)
+                                    {
+                                        reduceFiddle = 0;
+                                        smokeIT(2.5, 0.5, 3.5, i / (double) te.smokeOnTimpani.length, "reddust", 2.1, 1);
+                                    }
+                                }
+
+                                if (te.smokeOnBass[i])
+                                {
+                                    if (reduceBass++ > 2)
+                                    {
+                                        reduceBass = 0;
+                                        smokeIT(2.5, 0.5, 3.5, i / (double) te.smokeOnTimpani.length, "slime", 1.7, 1);
+                                    }
+                                }
+
+                            }
+                        }
 
                         Thread.sleep(4);
 
@@ -213,6 +262,21 @@ public class MidiHW implements Runnable
     private boolean hasCChannelInstrament(int channel, GmInstrament i)
     {
         return chanelInstrament[channel] == sz.getAvailableInstruments()[i.getNo()];
+    }
+
+    public void smokeIT(double x, double y, double z, double direction, String particle, double radius, double yVel)
+    {
+        final double xComp = Math.cos(Math.PI * 2 * direction) + Math.random() * 0.1;
+        final double zComp = Math.sin(Math.PI * 2 * direction) + Math.random() * 0.1;
+
+        if (te.hasWorldObj())
+        {
+            te.getWorldObj().spawnParticle(particle,
+                    te.xCoord + x + xComp * radius + Math.random() * 0.15,
+                    te.yCoord + y + Math.random() * 0.15,
+                    te.zCoord + z + zComp * radius + Math.random() * 0.15,
+                    xComp * 0.1, yVel, zComp * 0.1);
+        }
     }
 
 
@@ -252,10 +316,19 @@ public class MidiHW implements Runnable
                     }
                     case ShortMessage.NOTE_ON:
                     {
-                        if (hasChannelInstrament(sm.getChannel(), GmInstrament.TubularBells))
+                        if (sm.getData1() - 21 > -1 && sm.getData1() - 21 < te.smokeOnTimpani.length)
                         {
-                            //Logger.info("Bell Off");
-                            //te.bellRingers1isActive = false;
+                            if (!hasChannelInstrament(sm.getChannel(), GmInstrament.TubularBells))
+                            {
+                                if (hasChannelInstrament(sm.getChannel(), GmInstrament.StringEnsemble))
+                                    te.smokeOnStringEnsemble[sm.getData1() - 21] = sm.getData2() != 0;
+                                else if (hasChannelInstrament(sm.getChannel(), GmInstrament.Fiddle))
+                                    te.smokeOnFiddle[sm.getData1() - 21] = sm.getData2() != 0;
+                                else if (hasChannelInstrament(sm.getChannel(), GmInstrament.AcousticBass))
+                                    te.smokeOnBass[sm.getData1() - 21] = sm.getData2() != 0;
+                                else
+                                    te.smokeOnTimpani[sm.getData1() - 21] = sm.getData2() != 0;
+                            }
                         }
                     }
                 }
@@ -263,6 +336,7 @@ public class MidiHW implements Runnable
 
             rec.send(midiMessage, timeStamp);
         }
+
 
         private boolean hasChannelInstrament(int channel, GmInstrament i)
         {

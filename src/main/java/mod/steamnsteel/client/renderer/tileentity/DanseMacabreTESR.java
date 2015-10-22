@@ -30,7 +30,7 @@ public class DanseMacabreTESR extends SteamNSteelTESR
         GL11.glPushMatrix();
 
         // Position Renderer
-        GL11.glTranslatef((float) x, (float) y, (float) z);
+        GL11.glTranslatef((float) x+4, (float) y, (float) z+5);
 
         if (!(te instanceof DanseMacabreTE)) return;
         final DanseMacabreTE dmte = (DanseMacabreTE) te;
