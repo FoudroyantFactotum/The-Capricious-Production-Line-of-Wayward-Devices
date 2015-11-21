@@ -18,8 +18,8 @@ package mod.steamnsteel.structure.registry;
 import com.google.common.base.Objects;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.structure.coordinates.TripleIterator;
-import net.minecraft.block.Block;
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.util.EnumFacing;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -28,7 +28,8 @@ import java.util.BitSet;
  * Structures contain two states. Construction & Form state C->F, F->C.
  *
  * 2D Example: (Ref grid CG-coord)
- * b -> block, '-' -> null | none, S -> Structure, H -> Shape
+ *              Construction           |              Form
+ * b -> block, '-' -> null, ' ' -> air | none, S -> Structure, H -> Shape
  *
  *   State(Construction)      State(Form)
  *        b,b,b,b               -,-,H,-
@@ -39,15 +40,21 @@ import java.util.BitSet;
  *
  * S(C) {
  *     blocks           = (as above)
- *     metadata         = (use your imagination)
- *     toolFormPosition = eg. (2,2) Note: player needs to be able to hit location with the tool
+ *     metadata         = metadata of the blocks
+ *     toolFormPosition = eg. (2,2) Note: player needs to be able to hit location with the tool else you'll never be
+ *                            able to form the structure
  * }
  *
  * S(F) {
- *     sbLayout{ ,Size, SizeHlf} = specify the location of shape blocks within State(Form)
- *     masterPosition            = translation of origin from S(C).origin -> S(F).origin eg. (0,0) -> (1,1)
- *                                 Note: location must exist in sbLayout
- *     collisionBoxes            = #imagination
+ *     sbLayout{Size, SizeHlf} = specify the location of shape blocks within State(Form)
+ *     masterPosition          = translation of origin from S(C).origin -> S(F).origin eg. (0,0) -> (1,1)
+ *                               Note: location must exist in sbLayout
+ *
+ *     collisionBoxes          = #imagination
+ * }
+ *
+ * Also watch out. The "getBlock(...)" can return blocks that are unregistered with minecraft (and null (no block)). Double check with an
+ * (result instanceOf IGeneralBlock) for safety.
  */
 public class StructureDefinition
 {
@@ -58,8 +65,7 @@ public class StructureDefinition
     private TripleCoord masterPosition;
     private TripleCoord toolFormPosition;
 
-    private Block[][][] blocks;
-    private byte[][][] metadata;
+    private IBlockState[][][] blocks;
     private float[][] collisionBoxes;
 
     private StructureDefinition()
@@ -72,8 +78,7 @@ public class StructureDefinition
                                TripleCoord masterPosition,
                                TripleCoord toolFormPosition,
 
-                               Block[][][] blocks,
-                               byte[][][] metadata,
+                               IBlockState[][][] blocks,
                                float[][] collisionBoxes)
     {
         this.sbLayout = sbLayout;
@@ -83,7 +88,6 @@ public class StructureDefinition
         this.toolFormPosition = toolFormPosition;
 
         this.blocks = blocks;
-        this.metadata = metadata;
         this.collisionBoxes = collisionBoxes;
 
         sbLayoutSizeHlf = TripleCoord.of(
@@ -92,13 +96,13 @@ public class StructureDefinition
                 sbLayoutSize.z/2);
     }
 
-    public boolean hasBlockAt(TripleCoord loc, ForgeDirection d) { return hasBlockAt(loc.x + d.offsetX, loc.y + d.offsetY, loc.z + d.offsetZ);}
+    public boolean hasBlockAt(TripleCoord loc, EnumFacing d) { return hasBlockAt(loc.x + d.getFrontOffsetX(), loc.y + d.getFrontOffsetY(), loc.z + d.getFrontOffsetZ());}
     public boolean hasBlockAt(TripleCoord loc) { return hasBlockAt(loc.x, loc.y, loc.z);}
     public boolean hasBlockAt(int x, int y, int z)
     {
-        x = x + masterPosition.x;
-        y = y + masterPosition.y;
-        z = z + masterPosition.z;
+        x += masterPosition.x;
+        y += masterPosition.y;
+        z += masterPosition.z;
 
         return  x < sbLayoutSize.x && x > -1 &&
                 y < sbLayoutSize.y && y > -1 &&
@@ -107,12 +111,12 @@ public class StructureDefinition
 
     }
 
-    public Block getBlock(TripleCoord loc) { return getBlock(loc.x, loc.y, loc.z);}
-    public Block getBlock(int x, int y, int z)
+    public IBlockState getBlock(TripleCoord loc) { return getBlock(loc.x, loc.y, loc.z);}
+    public IBlockState getBlock(int x, int y, int z)
     {
-        x = x + masterPosition.x;
-        y = y + masterPosition.y;
-        z = z + masterPosition.z;
+        x += masterPosition.x;
+        y += masterPosition.y;
+        z += masterPosition.z;
 
         if (blocks.length > x        &&
                 blocks[x].length > y &&
@@ -120,21 +124,6 @@ public class StructureDefinition
             return blocks[x][y][z];
 
         return null;
-    }
-
-    public int getBlockMetadata(TripleCoord loc) { return getBlockMetadata(loc.x,loc.y, loc.z);}
-    public int getBlockMetadata(int x, int y, int z)
-    {
-        x = x + masterPosition.x;
-        y = y + masterPosition.y;
-        z = z + masterPosition.z;
-
-        if (metadata.length > x &&
-                metadata[x].length > y &&
-                metadata[x][y].length > z)
-            return metadata[x][y][z];
-
-        return 0;
     }
 
     public TripleCoord getBlockBounds()
@@ -157,12 +146,7 @@ public class StructureDefinition
         return toolFormPosition;
     }
 
-    public TripleIterator getConstructionItr()
-    {
-        return new TripleIterator(blocks.length, blocks[0].length, blocks[0][0].length);
-    }
-
-    public TripleIterator getFormItr()
+    public TripleIterator getStructureItr()
     {
         return new TripleIterator(
                 -masterPosition.x,                -masterPosition.y,                   -masterPosition.z,
@@ -177,7 +161,6 @@ public class StructureDefinition
     public String toString(){
         return Objects.toStringHelper(this)
                 .add("blocks", Arrays.toString(blocks))
-                .add("metadata", Arrays.toString(metadata))
                 .add("collisionBoxes", Arrays.toString(collisionBoxes))
                 .add("masterPosition", masterPosition)
                 .add("toolFormPosition", toolFormPosition)

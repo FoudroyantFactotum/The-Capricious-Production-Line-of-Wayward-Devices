@@ -17,7 +17,6 @@
 package mod.steamnsteel.world;
 
 import com.google.common.collect.Lists;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import mod.steamnsteel.configuration.Settings;
 import mod.steamnsteel.library.ModBlock;
 import mod.steamnsteel.world.ore.NiterOreGenerator;
@@ -27,11 +26,12 @@ import mod.steamnsteel.world.ore.SulfurOreGenerator;
 import mod.steamnsteel.world.structure.RemnantRuinsGenerator;
 import mod.steamnsteel.world.structure.StructureChunkGenerator;
 import mod.steamnsteel.world.structure.StructureGenerator;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.terraingen.OreGenEvent;
 import net.minecraftforge.event.terraingen.PopulateChunkEvent;
 import net.minecraftforge.event.terraingen.TerrainGen;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
 import java.util.List;
 
 import static net.minecraftforge.event.terraingen.OreGenEvent.GenerateMinable.EventType.CUSTOM;
@@ -53,8 +53,8 @@ public enum WorldGen
     }
 
     private static void register() {
-        MinecraftForge.ORE_GEN_BUS.register(INSTANCE);
-        MinecraftForge.EVENT_BUS.register(INSTANCE);
+        //MinecraftForge.ORE_GEN_BUS.register(INSTANCE);
+        //MinecraftForge.EVENT_BUS.register(INSTANCE);
     }
 
     private static void createOreGenerators()
@@ -99,8 +99,8 @@ public enum WorldGen
     public void OnPostOreGenerated(OreGenEvent.Post event)
     {
         for (final OreGenerator oreGen : oreGens)
-            if (TerrainGen.generateOre(event.world, event.rand, oreGen, event.worldX, event.worldZ, CUSTOM))
-                oreGen.generate(event.world, event.rand, event.worldX, 0, event.worldZ);
+            if (TerrainGen.generateOre(event.world, event.rand, oreGen, event.pos, CUSTOM))
+                oreGen.generate(event.world, event.rand, event.pos);
     }
 
     @SubscribeEvent

@@ -16,7 +16,6 @@
 
 package mod.steamnsteel.block;
 
-import mod.steamnsteel.block.SteamNSteelBlock;
 import net.minecraft.block.material.Material;
 
 public class SteamNSteelStorageBlock extends SteamNSteelBlock
@@ -32,7 +31,7 @@ public class SteamNSteelStorageBlock extends SteamNSteelBlock
     public SteamNSteelStorageBlock(String name)
     {
         super(Material.iron);
-        setBlockName(name);
+        setUnlocalizedName(name);
         setHardness(5.0f);
         setResistance(10.0f);
         setStepSound(soundTypeMetal);

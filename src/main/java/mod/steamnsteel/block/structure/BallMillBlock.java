@@ -15,26 +15,34 @@
  */
 package mod.steamnsteel.block.structure;
 
+
 import com.google.common.collect.ImmutableMap;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.StructureDefinitionBuilder;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.tileentity.structure.BallMillTE;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
-import net.minecraft.block.ITileEntityProvider;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class BallMillBlock extends SteamNSteelStructureBlock implements ITileEntityProvider
+public class BallMillBlock extends SteamNSteelStructureBlock
 {
     public static final String NAME = "ballMill";
 
     public BallMillBlock()
     {
-        setBlockName(NAME);
+        setUnlocalizedName(NAME);
+        setDefaultState(
+                this.blockState
+                        .getBaseState()
+                        .withProperty(BlockDirectional.FACING, EnumFacing.NORTH)
+                        .withProperty(propMirror, false)
+        );
     }
 
     private static float rndRC()
@@ -52,22 +60,22 @@ public class BallMillBlock extends SteamNSteelStructureBlock implements ITileEnt
 
         for (int i = 0; i < 1; ++i)
         {
-            world.spawnParticle("explode", x + rndRC(), y + 1, z + rndRC(), sx, sy, sz);
-            world.spawnParticle("largesmoke", x, y, z, sx, sy, sz);
-            world.spawnParticle("explode", x + rndRC(), y, z + rndRC(), sx, sy, sz);
+            //world.spawnParticle("explode", x + rndRC(), y + 1, z + rndRC(), sx, sy, sz);
+            //world.spawnParticle("largesmoke", x, y, z, sx, sy, sz);
+            //world.spawnParticle("explode", x + rndRC(), y, z + rndRC(), sx, sy, sz);
         }
     }
 
     @Override
-    public TileEntity createNewTileEntity(World world, int meta)
+    public boolean hasTileEntity(IBlockState state)
     {
-        return new BallMillTE(meta);
+        return true;
     }
 
     @Override
-    public boolean onStructureBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float sx, float sy, float sz, TripleCoord sbID, int sbx, int sby, int sbz)
+    public TileEntity createTileEntity(World world, IBlockState state)
     {
-        return false;
+        return new BallMillTE(getPattern(), (EnumFacing)state.getValue(BlockDirectional.FACING), (Boolean)state.getValue(propMirror));
     }
 
     @Override
@@ -83,7 +91,7 @@ public class BallMillBlock extends SteamNSteelStructureBlock implements ITileEnt
         builder.assignConstructionBlocks(
                 new String[]{
                         "S S S",
-                        "     "
+                        "    -"
                 },
                 new String[]{
                         "     ",
@@ -95,7 +103,7 @@ public class BallMillBlock extends SteamNSteelStructureBlock implements ITileEnt
 
         builder.setConfiguration(TripleCoord.of(0,0,0),
                 new String[]{
-                        "M----",
+                        "-M---",
                         "---- "
                 },
                 new String[]{
@@ -108,8 +116,9 @@ public class BallMillBlock extends SteamNSteelStructureBlock implements ITileEnt
                 new float[]{0.0f,0.0f,0.0f, 1.0f,1.49f,2.0f},
                 new float[]{1.0f,0.0f,0.2f, 3.5f,1.77f,1.8f},
                 new float[]{3.5f,0.0f,0.0f, 4.0f,1.49f,2.0f},
-                new float[]{4.0f,0.0f,0.0f, 5.0f,1.49f,1.0f},
-                new float[]{3.5f,1.1f,1.1f, 5.0f,1.9f,1.9f}
+                new float[]{4.0f,0.0f,0.0f, 4.6f,1.49f,1.0f},
+                new float[]{4.6f,0.0f,0.0f, 5.0f,1.1f ,1.0f},
+                new float[]{3.5f,1.1f,1.1f, 5.0f,1.9f ,1.9f}
         );
 
         return builder;

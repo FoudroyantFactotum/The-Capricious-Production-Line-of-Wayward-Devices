@@ -15,41 +15,55 @@
  */
 package mod.steamnsteel.block.structure;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import mod.steamnsteel.block.SteamNSteelMachineBlock;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.IStructure.IStructureTE;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.structure.registry.StructureRegistry;
 import mod.steamnsteel.tileentity.structure.StructureShapeTE;
-import net.minecraft.block.Block;
 import net.minecraft.block.ITileEntityProvider;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.particle.EffectRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.IIcon;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumWorldBlockLayer;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.List;
 import java.util.Random;
 
 import static mod.steamnsteel.block.SteamNSteelStructureBlock.*;
 import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobalCollisionBoxes;
-import static mod.steamnsteel.utility.Orientation.getdecodedOrientation;
+import static net.minecraft.block.BlockDirectional.FACING;
 
 public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITileEntityProvider
 {
     public static boolean _DEBUG = false;
     public static final String NAME = "structureShape";
-    public static final AxisAlignedBB EMPTY_BOUNDS = AxisAlignedBB.getBoundingBox(0, 0, 0, 0, 0, 0);
+    public static final AxisAlignedBB EMPTY_BOUNDS = AxisAlignedBB.fromBounds(0, 0, 0, 0, 0, 0);
 
     public StructureShapeBlock()
     {
-        setBlockName(NAME);
+        setUnlocalizedName(NAME);
+        setDefaultState(this.blockState
+                .getBaseState()
+                .withProperty(FACING, EnumFacing.NORTH)
+                .withProperty(propMirror, false)
+        );
+    }
+
+    @Override
+    protected BlockState createBlockState()
+    {
+        return new BlockState(this, FACING, propMirror);
     }
 
     @Override
@@ -60,19 +74,20 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
 
     @Override
     @SideOnly(Side.CLIENT)
-    public AxisAlignedBB getSelectedBoundingBoxFromPool(World world, int x, int y, int z)
+    public AxisAlignedBB getSelectedBoundingBox(World world, BlockPos pos)
     {
-        return EMPTY_BOUNDS;
+        final StructureShapeTE te = (StructureShapeTE) world.getTileEntity(pos);
+        //return EMPTY_BOUNDS;
+        return world.getTileEntity(te.getMasterBlockLocation().getBlockPos()).getRenderBoundingBox();
     }
 
     @Override
-    public void addCollisionBoxesToList(World world, int x, int y, int z, AxisAlignedBB aabb, List boundingBoxList, Entity entityColliding)
+    public void addCollisionBoxesToList(World world, BlockPos pos, IBlockState state, AxisAlignedBB mask, List list, Entity collidingEntity)
     {
-        final IStructureTE te = (IStructureTE) world.getTileEntity(x, y, z);
+        final IStructureTE te = (IStructureTE) world.getTileEntity(pos);
 
         if (te != null)
         {
-            final int meta = world.getBlockMetadata(x, y, z);
             final TripleCoord mloc = te.getMasterBlockLocation();
             final SteamNSteelStructureBlock sb = StructureRegistry.getStructureBlock(te.getRegHash());
 
@@ -82,8 +97,16 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
             }
 
             localToGlobalCollisionBoxes(mloc.x, mloc.y, mloc.z,
-                    aabb, boundingBoxList, sb.getPattern().getCollisionBoxes(), getdecodedOrientation(meta), isMirrored(meta), sb.getPattern().getBlockBounds());
+                    mask, list, sb.getPattern().getCollisionBoxes(),
+                    (EnumFacing) state.getValue(FACING), isMirrored(state),
+                    sb.getPattern().getBlockBounds()
+            );
         }
+    }
+
+    public boolean isFullCube()
+    {
+        return false;
     }
 
     @Override
@@ -94,9 +117,9 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
 
     @Override
     @SideOnly(Side.CLIENT)
-    public boolean addDestroyEffects(World world, int x, int y, int z, int meta, EffectRenderer effectRenderer)
+    public boolean addDestroyEffects(World world, BlockPos pos, EffectRenderer effectRenderer)
     {
-        final IStructureTE te = (IStructureTE) world.getTileEntity(x, y, z);
+        final IStructureTE te = (IStructureTE) world.getTileEntity(pos);
 
         if (te != null)
         {
@@ -104,8 +127,7 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
 
             if (block != null)
             {
-                final TripleCoord mloc = te.getMasterBlockLocation();
-                return block.addDestroyEffects(world, mloc.x, mloc.y, mloc.z, meta, effectRenderer);
+                return block.addDestroyEffects(world, te.getMasterBlockLocation().getBlockPos(), effectRenderer);
             }
         }
 
@@ -113,11 +135,12 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
     }
 
     @Override
-    public boolean removedByPlayer(World world, EntityPlayer player, int x, int y, int z, boolean willHarvest)
+    public boolean removedByPlayer(World world, BlockPos pos, EntityPlayer player, boolean willHarvest)
     {
-        final int meta = world.getBlockMetadata(x, y, z);
-        final IStructureTE te = (IStructureTE) world.getTileEntity(x, y, z);
+        final IBlockState state = world.getBlockState(pos);
+        final IStructureTE te = (IStructureTE) world.getTileEntity(pos);
         final boolean isPlayerCreative = player != null && player.capabilities.isCreativeMode;
+        final boolean isPlayerSneaking = player != null && player.isSneaking();
 
         final SteamNSteelStructureBlock sb = StructureRegistry.getStructureBlock(te.getRegHash());
 
@@ -126,30 +149,31 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
             breakStructure(world,
                     te.getMasterBlockLocation(),
                     sb.getPattern(),
-                    getdecodedOrientation(meta),
-                    isMirrored(meta),
-                    isPlayerCreative
+                    (EnumFacing) state.getValue(FACING),
+                    isMirrored(state),
+                    isPlayerCreative,
+                    isPlayerSneaking
             );
             updateExternalNeighbours(world,
                     te.getMasterBlockLocation(),
                     sb.getPattern(),
-                    getdecodedOrientation(meta),
-                    isMirrored(meta),
+                    (EnumFacing) state.getValue(FACING),
+                    isMirrored(state),
                     false
             );
 
         } else
         {
-            world.setBlockToAir(x, y, z);
+            world.setBlockToAir(pos);
         }
 
         return true;
     }
 
     @Override
-    public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float sx, float sy, float sz)
+    public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumFacing side, float sx, float sy, float sz)
     {
-        final StructureShapeTE te = (StructureShapeTE) world.getTileEntity(x, y, z);
+        final StructureShapeTE te = (StructureShapeTE) world.getTileEntity(pos);
 
         if (te != null)
         {
@@ -157,22 +181,26 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
 
             if (block != null)
             {
-                final int meta = world.getBlockMetadata(x, y, z);
                 final TripleCoord mloc = te.getMasterBlockLocation();
+                final BlockPos mbp = new BlockPos(mloc.x, mloc.y, mloc.z);
 
-                return block.onStructureBlockActivated(world, mloc.x, mloc.y, mloc.z, player, meta, sx, sy, sz, te.getLocal(), x, y, z);
+                return block.onStructureBlockActivated(world, mbp, player, pos, side, te.getLocal(), sx, sy, sz);
             }
         }
 
-        world.setBlockToAir(x, y, z);
+        world.setBlockToAir(pos);
 
         return false;
     }
 
     @Override
-    public void onNeighborBlockChange(World world, int x, int y, int z, Block block)
+    public void onNeighborChange(IBlockAccess world, BlockPos pos, BlockPos neighbourBlock)
     {
-        onSharedNeighbourBlockChange(world, x, y, z, ((StructureShapeTE) world.getTileEntity(x, y, z)).getRegHash(), block);
+        onSharedNeighbourBlockChange(world, pos,
+                ((StructureShapeTE) world.getTileEntity(pos)).getRegHash(),
+                world.getBlockState(neighbourBlock).getBlock(),
+                world.getBlockState(pos)
+        );
     }
 
     //======================================
@@ -180,30 +208,21 @@ public class StructureShapeBlock extends SteamNSteelMachineBlock implements ITil
     //======================================
 
     @Override
-    public boolean renderAsNormalBlock() {
-        return !_DEBUG && super.renderAsNormalBlock();
-    }
-
-    @Override
     public int getRenderType()
     {
-        return _DEBUG?0:super.getRenderType();
-    }
-
-    @Override
-    public int getRenderBlockPass() {
-        return _DEBUG?1:super.getRenderType();
+        return _DEBUG?3: -1;
     }
 
     @Override
     public boolean isOpaqueCube()
     {
-        return !_DEBUG && super.isOpaqueCube();
+        return false;
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
-    public IIcon getIcon(int side, int meta)
+    public EnumWorldBlockLayer getBlockLayer()
     {
-        return _DEBUG?Blocks.stained_glass.getIcon(side, meta): super.getIcon(side, meta);
+        return EnumWorldBlockLayer.TRANSLUCENT;
     }
 }

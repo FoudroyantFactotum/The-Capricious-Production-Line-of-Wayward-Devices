@@ -15,19 +15,23 @@
  */
 package mod.steamnsteel.block.structure;
 
+
 import com.google.common.collect.ImmutableMap;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import com.google.common.collect.ImmutableMap.Builder;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.StructureDefinitionBuilder;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.tileentity.structure.BlastFurnaceTE;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
-import net.minecraft.block.ITileEntityProvider;
+import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class BlastFurnaceBlock extends SteamNSteelStructureBlock implements ITileEntityProvider
+public class BlastFurnaceBlock extends SteamNSteelStructureBlock
 {
     public static final String NAME = "blastFurnace";
 
@@ -39,7 +43,13 @@ public class BlastFurnaceBlock extends SteamNSteelStructureBlock implements ITil
 
     public BlastFurnaceBlock()
     {
-        setBlockName(NAME);
+        setUnlocalizedName(NAME);
+        setDefaultState(
+                this.blockState
+                        .getBaseState()
+                        .withProperty(BlockDirectional.FACING, EnumFacing.NORTH)
+                        .withProperty(propMirror, false)
+        );
     }
 
     @Override
@@ -56,10 +66,17 @@ public class BlastFurnaceBlock extends SteamNSteelStructureBlock implements ITil
     }
 
     @Override
-    public TileEntity createNewTileEntity(World world, int meta)
+    public boolean hasTileEntity(IBlockState state)
     {
-        return new BlastFurnaceTE(meta);
+        return true;
     }
+
+    @Override
+    public TileEntity createTileEntity(World world, IBlockState state)
+    {
+        return new BlastFurnaceTE(getPattern(), (EnumFacing)state.getValue(BlockDirectional.FACING), (Boolean)state.getValue(propMirror));
+    }
+
 
     @Override
     public StructureDefinitionBuilder getStructureBuild()
@@ -81,7 +98,7 @@ public class BlastFurnaceBlock extends SteamNSteelStructureBlock implements ITil
                 },
                 new String[]{
                         "bbb",
-                        "plp",
+                        "p p",
                         "ppp"
                 },
                 new String[]{
@@ -91,22 +108,43 @@ public class BlastFurnaceBlock extends SteamNSteelStructureBlock implements ITil
                 }
         );
 
-        //#magic
-        builder.assignMetadata(
+        final Builder<Character, String> stateList = ImmutableMap.builder();
+
+        stateList.put('l', "facing:east,half:bottom,shape:straight");
+        stateList.put('q', "facing:north,half:bottom,shape:outer_left");
+        stateList.put('s', "facing:north,half:bottom,shape:straight");
+        stateList.put('y', "facing:north,half:bottom,shape:outer_right");
+        stateList.put('r', "facing:west,half:bottom,shape:straight");
+
+        //inverse of above
+        /*stateList.put('l', "facing:west,half:bottom,shape:straight");
+        stateList.put('q', "facing:south,half:bottom,shape:inner_left");
+        stateList.put('s', "facing:south,half:bottom,shape:straight");
+        stateList.put('y', "facing:south,half:bottom,shape:inner_right");
+        stateList.put('r', "facing:east,half:bottom,shape:straight");*/
+
+        stateList.put('L', "facing:east,half:top,shape:straight");
+        stateList.put('Y', "facing:east,half:top,shape:outer_right");
+        stateList.put('S', "facing:north,half:top,shape:straight");
+        stateList.put('Q', "facing:north,half:top,shape:outer_right");
+        stateList.put('R', "facing:west,half:top,shape:straight");
+
+        builder.assignStateDefinitions(stateList.build());
+        builder.assignConstructionStates(
                 new String[]{
-                        "666",
-                        "405",
-                        "777"
+                        "   ",
+                        "L R",
+                        "YSQ"
                 },
                 new String[]{
-                        "000",
-                        "000",
-                        "000"
+                        "   ",
+                        "   ",
+                        "   "
                 },
                 new String[]{
-                        "222",
-                        "001",
-                        "333"
+                        "   ",
+                        "l r",
+                        "ysq"
                 }
         );
 

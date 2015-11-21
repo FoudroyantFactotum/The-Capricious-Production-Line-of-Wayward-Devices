@@ -16,11 +16,11 @@
 
 package mod.steamnsteel.crafting;
 
-import cpw.mods.fml.common.registry.GameRegistry;
 import mod.steamnsteel.library.ModBlock;
 import mod.steamnsteel.utility.crafting.RecipePattern;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 
 @SuppressWarnings("UtilityClass")
@@ -44,7 +44,10 @@ public final class Recipes
     private static void addCupolaRecipe()
     {
         final RecipePattern pattern = RecipePattern.of("#X#", "X X", "#X#");
+
         final IRecipe recipe = new ShapedOreRecipe(ModBlock.cupola, pattern.get(), '#', "ingotIron", 'X', Blocks.brick_block);
         GameRegistry.addRecipe(recipe);
+
+
     }
 }

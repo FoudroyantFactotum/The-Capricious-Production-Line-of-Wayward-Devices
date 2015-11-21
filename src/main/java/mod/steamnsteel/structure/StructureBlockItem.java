@@ -18,20 +18,20 @@ package mod.steamnsteel.structure;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.structure.coordinates.TripleIterator;
-import mod.steamnsteel.utility.Orientation;
-import mod.steamnsteel.utility.position.WorldBlockCoord;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
 import static mod.steamnsteel.block.SteamNSteelStructureBlock.bindLocalToGlobal;
-import static mod.steamnsteel.block.SteamNSteelStructureBlock.flagMirrored;
+import static mod.steamnsteel.block.SteamNSteelStructureBlock.propMirror;
 import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobal;
-import static mod.steamnsteel.utility.Orientation.getdecodedOrientation;
+import static net.minecraft.block.BlockDirectional.FACING;
 
 public class StructureBlockItem extends ItemBlock
 {
@@ -41,18 +41,20 @@ public class StructureBlockItem extends ItemBlock
     }
 
     @Override
-    public boolean placeBlockAt(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side, float hitX, float hitY, float hitZ, int metadata)
+    public boolean placeBlockAt(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ, IBlockState newState)
     {
-        final SteamNSteelStructureBlock block = (SteamNSteelStructureBlock) field_150939_a;
+        final SteamNSteelStructureBlock block = (SteamNSteelStructureBlock) this.block;
 
         if (player == null)
         {
             return false;
         }
 
-        final Orientation o = getdecodedOrientation(BlockDirectional.getDirection(MathHelper.floor_double(player.rotationYaw * 4.0f / 360.0f + 0.5)));
+        final int orientation = (MathHelper.floor_double(player.rotationYaw * 4.0f / 360.0f + 0.5)) & 3;
+        final EnumFacing horizontal = EnumFacing.getHorizontal(orientation);
         final boolean isMirrored = false; //player.isSneaking(); Disabled until fix :p todo fix structure mirroring
-        metadata = o.encode() | (isMirrored ? flagMirrored : 0);
+
+        newState = newState.withProperty(FACING, horizontal).withProperty(propMirror, isMirrored);
 
         //find master block location
         final TripleCoord hSize = block.getPattern().getHalfBlockBounds();
@@ -60,26 +62,31 @@ public class StructureBlockItem extends ItemBlock
 
         TripleCoord mLoc
                 = localToGlobal(
-                -hSize.x - ml.x, ml.y, -hSize.z - ml.z,
-                x,               y,    z,
-                o, isMirrored, block.getPattern().getBlockBounds());
+                -hSize.x + ml.x, ml.y, -hSize.z + ml.z,
+                pos.getX(), pos.getY(), pos.getZ(),
+                horizontal, isMirrored, block.getPattern().getBlockBounds());
 
         //check block locations
-        final TripleIterator itr = block.getPattern().getFormItr();
+        final TripleIterator itr = block.getPattern().getStructureItr();
 
         while (itr.hasNext())
         {
-            final WorldBlockCoord coord = bindLocalToGlobal(mLoc, itr.next(), o, isMirrored, block.getPattern().getBlockBounds());
+            final TripleCoord local = itr.next();
+            final BlockPos coord = bindLocalToGlobal(mLoc, local, horizontal, isMirrored, block.getPattern().getBlockBounds());
 
-            if (!coord.isReplaceable(world))
+            if (!block.getPattern().hasBlockAt(local))
+            {
+                continue;
+            }
+
+            if (!world.getBlockState(coord).getBlock().isReplaceable(world, coord))
             {
                 return false;
             }
         }
 
-        world.setBlock(mLoc.x, mLoc.y, mLoc.z, block, metadata, 0x2);
-        block.onBlockPlacedBy(world, mLoc.x, mLoc.y, mLoc.z, player, stack);
-        block.onPostBlockPlaced(world, mLoc.x, mLoc.y, mLoc.z, metadata);
+        world.setBlockState(mLoc.getBlockPos(), newState, 0x2);
+        block.onBlockPlacedBy(world, mLoc.getBlockPos(), newState, player, stack);
 
         return true;
     }

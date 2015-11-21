@@ -15,14 +15,16 @@
  */
 package mod.steamnsteel.tileentity.structure;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import mod.steamnsteel.api.plumbing.IPipeTileEntity;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.IStructure.IStructureTE;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
+import mod.steamnsteel.structure.registry.GeneralBlock.IGeneralBlock;
 import mod.steamnsteel.structure.registry.StructureRegistry;
 import mod.steamnsteel.tileentity.SteamNSteelTE;
-import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.ISidedInventory;
@@ -32,7 +34,9 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.IChatComponent;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
@@ -41,11 +45,11 @@ import net.minecraftforge.fluids.IFluidHandler;
 import static mod.steamnsteel.block.SteamNSteelStructureBlock.isMirrored;
 import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobal;
 import static mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE.*;
-import static mod.steamnsteel.utility.Orientation.getdecodedOrientation;
+import static net.minecraft.block.BlockDirectional.FACING;
 
 public final class StructureShapeTE extends SteamNSteelTE implements IStructureTE, ISidedInventory, IFluidHandler, IPipeTileEntity
 {
-    private TripleCoord local = TripleCoord.of(0,0,0);
+    private TripleCoord local = TripleCoord.of(0, 0, 0);
     private int definitionHash = -1;
 
     private Optional<TripleCoord> masterLocation = Optional.absent();
@@ -69,8 +73,7 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
 
         //get te and test
         final TripleCoord mloc = getMasterBlockLocation();
-        final TileEntity te = getWorldObj()
-                .getTileEntity(mloc.x, mloc.y, mloc.z);
+        final TileEntity te = getWorld().getTileEntity(mloc.getBlockPos());
 
         if (hasNotAttemptedAcquisitionOfOriginTE && te instanceof SteamNSteelStructureTE)
         {
@@ -101,22 +104,23 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
         return StructureRegistry.getStructureBlock(definitionHash);
     }
 
+    @Override
     public TripleCoord getMasterBlockLocation()
     {
         if (!masterLocation.isPresent())
         {
-            final int meta = getBlockMetadata();
+            final IBlockState state = getWorld().getBlockState(pos);
             final SteamNSteelStructureBlock sb = StructureRegistry.getStructureBlock(definitionHash);
 
             if (sb == null)
             {
-                return TripleCoord.of(xCoord, yCoord, zCoord);
+                return TripleCoord.of(pos);
             }
 
             masterLocation = Optional.of(localToGlobal(
                     -local.x, -local.y, -local.z,
-                    xCoord, yCoord, zCoord,
-                    getdecodedOrientation(meta), isMirrored(meta),
+                    pos.getX(), pos.getY(), pos.getZ(),
+                    (EnumFacing) state.getValue(FACING), isMirrored(state),
                     sb.getPattern().getBlockBounds()));
         }
 
@@ -124,39 +128,19 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     }
 
     @Override
-    public Block getTransmutedBlock()
+    public IBlockState getTransmutedBlock()
     {
         SteamNSteelStructureBlock sb = StructureRegistry.getStructureBlock(definitionHash);
 
         if (sb != null)
         {
-            Block block = sb.getPattern().getBlock(local);
-            return block == null ?
-                    Blocks.air :
+            IBlockState block = sb.getPattern().getBlock(local);
+            return block == null || block instanceof IGeneralBlock ?
+                    Blocks.air.getDefaultState() :
                     block;
         }
 
-        return Blocks.air;
-    }
-
-    @Override
-    public int getTransmutedMeta()
-    {
-        final SteamNSteelStructureBlock sb = StructureRegistry.getStructureBlock(definitionHash);
-
-        if (sb != null)
-        {
-            final int meta = getBlockMetadata();
-
-            return localToGlobal(
-                    sb.getPattern().getBlockMetadata(local),
-                    getTransmutedBlock(),
-                    getdecodedOrientation(meta),
-                    isMirrored(meta)
-            );
-        }
-
-        return 0;
+        return Blocks.air.getDefaultState();
     }
 
     @Override
@@ -178,22 +162,22 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     //================================================================
 
     @Override
-    public int[] getAccessibleSlotsFromSide(int side)
+    public int[] getSlotsForFace(EnumFacing side)
     {
-        return hasOriginTE()?
-                getOriginTE().getAccessibleSlotsFromStructureSide(side, local):
+        return hasOriginTE() ?
+                getOriginTE().getSlotsForStructureFace(side, local) :
                 new int[0];
     }
 
     @Override
-    public boolean canInsertItem(int slotIndex, ItemStack itemStack, int side)
+    public boolean canInsertItem(int slotIndex, ItemStack itemStack, EnumFacing side)
     {
         return hasOriginTE() && getOriginTE()
                 .canStructureInsertItem(slotIndex, itemStack, side, local);
     }
 
     @Override
-    public boolean canExtractItem(int slotIndex, ItemStack itemStack, int side)
+    public boolean canExtractItem(int slotIndex, ItemStack itemStack, EnumFacing side)
     {
         return hasOriginTE() && getOriginTE()
                 .canStructureExtractItem(slotIndex, itemStack, side, local);
@@ -253,20 +237,26 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     }
 
     @Override
-    public String getInventoryName()
+    public IChatComponent getDisplayName()
     {
         if (hasOriginTE())
         {
-            return getOriginTE().getInventoryName();
+            return getOriginTE().getDisplayName();
         }
 
-        return "";
+        return new ChatComponentText("");
     }
 
     @Override
-    public boolean hasCustomInventoryName()
+    public String getCommandSenderName()
     {
-        return hasOriginTE() && getOriginTE().hasCustomInventoryName();
+        return null;
+    }
+
+    @Override
+    public boolean hasCustomName()
+    {
+        return hasOriginTE() && getOriginTE().hasCustomName();
     }
 
     @Override
@@ -287,20 +277,20 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     }
 
     @Override
-    public void openInventory()
+    public void openInventory(EntityPlayer player)
     {
         if (hasOriginTE())
         {
-            getOriginTE().openInventory();
+            getOriginTE().openInventory(player);
         }
     }
 
     @Override
-    public void closeInventory()
+    public void closeInventory(EntityPlayer player)
     {
         if (hasOriginTE())
         {
-            getOriginTE().closeInventory();
+            getOriginTE().closeInventory(player);
         }
     }
 
@@ -310,12 +300,36 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
         return hasOriginTE() && getOriginTE().isItemValidForSlot(slotIndex, itemStack);
     }
 
+    @Override
+    public int getField(int id)
+    {
+        return 0;
+    }
+
+    @Override
+    public void setField(int id, int value)
+    {
+
+    }
+
+    @Override
+    public int getFieldCount()
+    {
+        return 0;
+    }
+
+    @Override
+    public void clear()
+    {
+
+    }
+
     //================================================================
     //                  F L U I D   H A N D L E R
     //================================================================
 
     @Override
-    public int fill(ForgeDirection from, FluidStack resource, boolean doFill)
+    public int fill(EnumFacing from, FluidStack resource, boolean doFill)
     {
         if (hasOriginTE())
         {
@@ -326,7 +340,7 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     }
 
     @Override
-    public FluidStack drain(ForgeDirection from, FluidStack resource, boolean doDrain)
+    public FluidStack drain(EnumFacing from, FluidStack resource, boolean doDrain)
     {
         if (hasOriginTE())
         {
@@ -337,7 +351,7 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     }
 
     @Override
-    public FluidStack drain(ForgeDirection from, int maxDrain, boolean doDrain)
+    public FluidStack drain(EnumFacing from, int maxDrain, boolean doDrain)
     {
         if (hasOriginTE())
         {
@@ -348,19 +362,19 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     }
 
     @Override
-    public boolean canFill(ForgeDirection from, Fluid fluid)
+    public boolean canFill(EnumFacing from, Fluid fluid)
     {
         return hasOriginTE() && getOriginTE().canStructureFill(from, fluid, local);
     }
 
     @Override
-    public boolean canDrain(ForgeDirection from, Fluid fluid)
+    public boolean canDrain(EnumFacing from, Fluid fluid)
     {
         return hasOriginTE() && getOriginTE().canStructureDrain(from, fluid, local);
     }
 
     @Override
-    public FluidTankInfo[] getTankInfo(ForgeDirection from)
+    public FluidTankInfo[] getTankInfo(EnumFacing from)
     {
         if (hasOriginTE())
         {
@@ -375,19 +389,19 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     //================================================================
 
     @Override
-    public boolean isSideConnected(ForgeDirection opposite)
+    public boolean isSideConnected(EnumFacing opposite)
     {
         return hasOriginTE() && getOriginTE().isStructureSideConnected(opposite, local);
     }
 
     @Override
-    public boolean tryConnect(ForgeDirection opposite)
+    public boolean tryConnect(EnumFacing opposite)
     {
         return hasOriginTE() && getOriginTE().tryStructureConnect(opposite, local);
     }
 
     @Override
-    public boolean canConnect(ForgeDirection opposite)
+    public boolean canConnect(EnumFacing opposite)
     {
         return hasOriginTE() && getOriginTE().canStructureConnect(opposite, local);
     }
@@ -399,7 +413,7 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
     }
 
     @Override
-    public void disconnect(ForgeDirection opposite)
+    public void disconnect(EnumFacing opposite)
     {
         if (hasOriginTE())
         {
@@ -417,13 +431,13 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
         final NBTTagCompound nbt = new NBTTagCompound();
         writeToNBT(nbt);
 
-        return new S35PacketUpdateTileEntity(xCoord, yCoord, zCoord, 1, nbt);
+        return new S35PacketUpdateTileEntity(pos, 1, nbt);
     }
 
     @Override
     public void onDataPacket(NetworkManager net, S35PacketUpdateTileEntity packet)
     {
-        readFromNBT(packet.func_148857_g());
+        readFromNBT(packet.getNbtCompound());
     }
 
     @Override
@@ -432,9 +446,9 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
         super.readFromNBT(nbt);
 
         final int blockInfo = nbt.getInteger(BLOCK_INFO);
-        definitionHash = nbt.getInteger(BLOCK_PATTERN_NAME);
 
         local = TripleCoord.dehashLoc(blockInfo & maskBlockID);
+        definitionHash = nbt.getInteger(BLOCK_PATTERN_NAME);
     }
 
     @Override
@@ -444,5 +458,21 @@ public final class StructureShapeTE extends SteamNSteelTE implements IStructureT
 
         nbt.setInteger(BLOCK_INFO, local.hashCode());
         nbt.setInteger(BLOCK_PATTERN_NAME, definitionHash);
+    }
+
+    //================================================================
+    //                          C l a s s
+    //================================================================
+
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                .add("local", local)
+                .add("definitionHash", definitionHash)
+                .add("masterLocation", masterLocation)
+                .add("originTE", originTE)
+                .add("hasNotAttemptedAcquisitionOfOriginTE", hasNotAttemptedAcquisitionOfOriginTE)
+                .toString();
     }
 }

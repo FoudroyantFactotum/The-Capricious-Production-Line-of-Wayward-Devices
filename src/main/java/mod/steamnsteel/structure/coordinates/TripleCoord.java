@@ -1,5 +1,8 @@
 package mod.steamnsteel.structure.coordinates;
 
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
+
 public final class TripleCoord
 {
     public int x;
@@ -21,6 +24,26 @@ public final class TripleCoord
     public static TripleCoord of(int x, int y, int z)
     {
         return new TripleCoord(x,y,z);
+    }
+
+    public static TripleCoord of (TripleCoord tc)
+    {
+        return new TripleCoord(tc.x, tc.y, tc.z);
+    }
+
+    public static TripleCoord of (BlockPos pos)
+    {
+        return new TripleCoord(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    public static TripleCoord of (TripleCoord tc, EnumFacing d)
+    {
+        return new TripleCoord(tc.x + d.getFrontOffsetX(), tc.y + d.getFrontOffsetY(), tc.z + d.getFrontOffsetZ());
+    }
+
+    public BlockPos getBlockPos()
+    {
+        return new BlockPos(x,y,z);
     }
 
     @Override

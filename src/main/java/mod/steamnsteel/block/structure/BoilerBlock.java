@@ -11,24 +11,29 @@
  * PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * this program; if not, see <http://www.gnu.org/licenses>.
+ * this program; if not, see <http://   .gnu.org/licenses>.
  */
 package mod.steamnsteel.block.structure;
 
 import com.google.common.collect.ImmutableMap;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.StructureDefinitionBuilder;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.tileentity.structure.BoilerTE;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
-import net.minecraft.block.ITileEntityProvider;
+import mod.steamnsteel.utility.log.Logger;
+import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class BoilerBlock extends SteamNSteelStructureBlock implements ITileEntityProvider
+public class BoilerBlock extends SteamNSteelStructureBlock
 {
     public static final String NAME = "boiler";
 
@@ -40,40 +45,53 @@ public class BoilerBlock extends SteamNSteelStructureBlock implements ITileEntit
 
     public BoilerBlock()
     {
-        setBlockName(NAME);
+        setUnlocalizedName(NAME);
+        setDefaultState(
+                this.blockState
+                        .getBaseState()
+                        .withProperty(BlockDirectional.FACING, EnumFacing.NORTH)
+                        .withProperty(propMirror, false)
+        );
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     public void spawnBreakParticle(World world, SteamNSteelStructureTE te, TripleCoord coord, float sx, float sy, float sz)
     {
-        /*final int x = coord.getX();
-        final int y = coord.getY();
-        final int z = coord.getZ();
+        final int x = coord.x;
+        final int y = coord.y;
+        final int z = coord.z;
 
-        final Block block = coord.getStructureDefinition().getBlock(coord.getLX(), coord.getLY(), coord.getLZ());
+        final IBlockState block = getPattern().getBlock(te.getLocal());
 
         if (block != null)
         {
             for (int i = 0; i < 5; ++i)
             {
-                world.spawnParticle("explode", x + rndRC(), y + 1, z + rndRC(), sx, sy, sz);
-                world.spawnParticle("explode", x, y + 0.5, z, sx, sy, sz);
-                world.spawnParticle("explode", x + rndRC(), y, z + rndRC(), sx, sy, sz);
+                world.spawnParticle(EnumParticleTypes.EXPLOSION_NORMAL, x + rndRC(), y + 1, z + rndRC(), sx, sy, sz);
+                world.spawnParticle(EnumParticleTypes.EXPLOSION_NORMAL, x, y + 0.5, z, sx, sy, sz);
+                world.spawnParticle(EnumParticleTypes.EXPLOSION_NORMAL, x + rndRC(), y, z + rndRC(), sx, sy, sz);
             }
-        }*/
+        }
     }
 
     @Override
-    public TileEntity createNewTileEntity(World world, int meta)
+    public boolean hasTileEntity(IBlockState state)
     {
-        return new BoilerTE(meta);
+        return true;
     }
 
     @Override
-    public boolean onStructureBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float sx, float sy, float sz, TripleCoord sbID, int sbx, int sby, int sbz)
+    public TileEntity createTileEntity(World world, IBlockState state)
     {
-        return super.onStructureBlockActivated(world, x, y, z, player, side, sx, sy, sz, sbID, sbx, sby, sbz);
+        return new BoilerTE(getPattern(), (EnumFacing)state.getValue(BlockDirectional.FACING), (Boolean)state.getValue(propMirror));
+    }
+
+    @Override
+    public boolean onStructureBlockActivated(World world, BlockPos pos, EntityPlayer player, BlockPos callPos, EnumFacing side, TripleCoord sbID, float sx, float sy, float sz)
+    {
+        Logger.info("Active: " + world.getTileEntity(pos));
+        return super.onStructureBlockActivated(world, pos, player, callPos, side, sbID, sx, sy, sz);
     }
 
     @Override
@@ -147,4 +165,6 @@ public class BoilerBlock extends SteamNSteelStructureBlock implements ITileEntit
 
         return builder;
     }
+
+
 }

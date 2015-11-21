@@ -15,12 +15,10 @@
  */
 package mod.steamnsteel.block;
 
-import cpw.mods.fml.common.Optional;
-import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import mcp.mobius.waila.api.ITaggedList.ITipList;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
+import mcp.mobius.waila.api.IWailaDataAccessorServer;
 import mcp.mobius.waila.api.IWailaDataProvider;
 import mod.steamnsteel.block.structure.StructureShapeBlock;
 import mod.steamnsteel.library.ModBlock;
@@ -29,46 +27,44 @@ import mod.steamnsteel.structure.IStructure.IStructureAspects;
 import mod.steamnsteel.structure.IStructure.IStructureTE;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.structure.coordinates.TripleIterator;
-import mod.steamnsteel.structure.net.StructurePacket;
-import mod.steamnsteel.structure.net.StructurePacketOption;
+import mod.steamnsteel.structure.registry.GeneralBlock.IGeneralBlock;
 import mod.steamnsteel.structure.registry.StructureDefinition;
-import mod.steamnsteel.structure.registry.StructureRegistry;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
-import mod.steamnsteel.utility.ModNetwork;
-import mod.steamnsteel.utility.Orientation;
 import mod.steamnsteel.utility.log.Logger;
-import mod.steamnsteel.utility.position.WorldBlockCoord;
 import mod.steamnsteel.waila.WailaProvider;
 import net.minecraft.block.Block;
-import net.minecraft.block.ITileEntityProvider;
+import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.properties.PropertyBool;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.particle.EffectRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.*;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fml.common.Optional;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.List;
 import java.util.Random;
 
 import static mod.steamnsteel.block.structure.StructureShapeBlock.EMPTY_BOUNDS;
 import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobal;
+import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobalBoundingBox;
 import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobalCollisionBoxes;
-import static mod.steamnsteel.utility.Orientation.getdecodedOrientation;
+import static net.minecraft.block.BlockDirectional.*;
+import static net.minecraft.block.BlockDirectional.FACING;
 
 @Optional.Interface(modid = WailaProvider.WAILA, iface = "mcp.mobius.waila.api.IWailaDataProvider", striprefs = true)
-public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock implements IPatternHolder, IStructureAspects, ITileEntityProvider, IWailaDataProvider
+public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock implements IPatternHolder, IStructureAspects,IWailaDataProvider
 {
     public static final TripleCoord ORIGIN = TripleCoord.of(0, 0, 0);
-    public static final int flagMirrored = 1 << 2;
-    public static final int maskMeta = 0x7;
 
     private int regHash = 0;
     private StructureDefinition structureDefinition = null;
@@ -85,67 +81,72 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
     }
 
     @Override
-    public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase entity, ItemStack itemStack)
+    protected BlockState createBlockState()
     {
-        super.onBlockPlacedBy(world, x, y, z, entity, itemStack);
+        return new BlockState(this, FACING, propMirror);
+    }
 
-        int meta = world.getBlockMetadata(x, y, z);
-        final boolean mirror = false; //todo entity.isSneaking();
+    @Override
+    public void onBlockPlacedBy(World world, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack)
+    {
+        super.onBlockPlacedBy(world, pos, state, placer, stack);
+
+        final EnumFacing orientation = (EnumFacing) state.getValue(FACING);
+        final boolean mirror = isMirrored(state); //todo entity.isSneaking();
 
         if (mirror)
         {
-            meta |= flagMirrored;
-            world.setBlockMetadataWithNotify(x, y, z, meta, 0x2);
+            world.setBlockState(pos, state.withProperty(propMirror, Boolean.TRUE), 0x2);
         }
 
-        formStructure(world, TripleCoord.of(x, y, z), meta, 0x2);
+        formStructure(world, TripleCoord.of(pos), state, 0x2);
+        updateExternalNeighbours(world, TripleCoord.of(pos), getPattern(), orientation, mirror, false);
     }
 
     @Override
-    public void onPostBlockPlaced(World world, int x, int y, int z, int meta)
+    public void onNeighborBlockChange(World worldIn, BlockPos pos, IBlockState state, Block neighborBlock)
     {
-        final Orientation orientation = getdecodedOrientation(meta);
-        final boolean isMirrored = isMirrored(meta);
-
-        updateExternalNeighbours(world, TripleCoord.of(x, y, z), getPattern(), orientation, isMirrored, false);
+        onSharedNeighbourBlockChange(worldIn, pos, regHash, neighborBlock, state);
     }
 
     @Override
-    public void onNeighborBlockChange(World world, int x, int y, int z, Block block)
+    public boolean removedByPlayer(World world, BlockPos pos, EntityPlayer player, boolean willHarvest)
     {
-        onSharedNeighbourBlockChange(world, x, y, z, regHash, block);
-    }
-
-    @Override
-    public boolean removedByPlayer(World world, EntityPlayer player, int x, int y, int z, boolean willHarvest)
-    {
-        final int meta = world.getBlockMetadata(x, y, z);
-        final SteamNSteelStructureTE te = (SteamNSteelStructureTE) world.getTileEntity(x, y, z);
-        final boolean isPlayerCreative = player != null && player.capabilities.isCreativeMode; //todo change?
+        final SteamNSteelStructureTE te = (SteamNSteelStructureTE) world.getTileEntity(pos);
+        final boolean isPlayerCreative = player != null && player.capabilities.isCreativeMode;
+        final boolean isPlayerSneaking = player != null && player.isSneaking();
 
         if (te != null)
         {
-            final TripleCoord origin = TripleCoord.of(x, y, z);
+            final TripleCoord origin = TripleCoord.of(pos);
 
-            breakStructure(world, origin, getPattern(), getdecodedOrientation(meta), isMirrored(meta), isPlayerCreative);
-            updateExternalNeighbours(world, origin, getPattern(), getdecodedOrientation(meta), isMirrored(meta), false);
+            breakStructure(world, origin, getPattern(), te.getOrientation(), te.getMirror(), isPlayerCreative, isPlayerSneaking);
+            updateExternalNeighbours(world, origin, getPattern(), te.getOrientation(), te.getMirror(), false);
         } else
         {
-            world.setBlockToAir(x, y, z);
+            world.setBlockToAir(pos);
         }
 
         return true;
     }
 
     @Override
-    public void addCollisionBoxesToList(World world, int x, int y, int z, AxisAlignedBB aabb, List boundingBoxList, Entity entityColliding)
+    public void addCollisionBoxesToList(World world, BlockPos pos, IBlockState state, AxisAlignedBB mask, List list, Entity collidingEntity)
     {
-        final int meta = world.getBlockMetadata(x, y, z);
-
         if (getPattern().getCollisionBoxes() != null)
         {
-            localToGlobalCollisionBoxes(x, y, z, aabb, boundingBoxList, getPattern().getCollisionBoxes(), getdecodedOrientation(meta), isMirrored(meta), getPattern().getBlockBounds());
+            localToGlobalCollisionBoxes(
+                    pos.getX(), pos.getY(), pos.getZ(),
+                    mask, list, getPattern().getCollisionBoxes(),
+                    (EnumFacing)state.getValue(FACING), isMirrored(state),
+                    getPattern().getBlockBounds()
+            );
         }
+    }
+
+    public boolean isFullCube()
+    {
+        return false;
     }
 
     @Override
@@ -155,30 +156,27 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
     }
 
     @Override
-    public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float sx, float sy, float sz)
+    public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumFacing side, float hitX, float hitY, float hitZ)
     {
-        return onStructureBlockActivated(world, x, y, z, player, side, sx, sy, sz, ORIGIN, x, y, z);
+        return onStructureBlockActivated(world, pos, player, pos, side, ORIGIN, hitX, hitY, hitZ);
     }
 
     @Override
-    public boolean onStructureBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float sx, float sy, float sz, TripleCoord sbID, int sbx, int sby, int sbz)
+    public boolean onStructureBlockActivated(World world, BlockPos pos, EntityPlayer player, BlockPos callPos, EnumFacing side, TripleCoord sbID, float sx, float sy, float sz)
     {
         return false;
     }
 
     @Override
     @SideOnly(Side.CLIENT)
-    public boolean addDestroyEffects(World world, int x, int y, int z, int meta, EffectRenderer effectRenderer)
+    public boolean addDestroyEffects(World world, BlockPos pos, EffectRenderer effectRenderer)
     {
         final float scaleVec = 0.05f;
-        final SteamNSteelStructureTE te = (SteamNSteelStructureTE) world.getTileEntity(x, y, z);
+        final SteamNSteelStructureTE te = (SteamNSteelStructureTE) world.getTileEntity(pos);
 
         if (te != null)
         {
-            final Orientation o = getdecodedOrientation(meta);
-            final boolean isMirrored = isMirrored(meta);
-
-            final TripleIterator itr = getPattern().getFormItr();
+            final TripleIterator itr = getPattern().getStructureItr();
 
             while (itr.hasNext())
             {
@@ -189,22 +187,22 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
                 float ySpeed = 0.0f;
                 float zSpeed = 0.0f;
 
-                for (ForgeDirection d : ForgeDirection.VALID_DIRECTIONS)
+                for (EnumFacing d : EnumFacing.VALUES)
                 {
                     if (!getPattern().hasBlockAt(local, d))
                     {
-                        d = localToGlobal(d, o, isMirrored);
+                        d = localToGlobal(d, te.getOrientation(), te.getMirror());
 
-                        xSpeed += d.offsetX;
-                        ySpeed += d.offsetY;
-                        zSpeed += d.offsetZ;
+                        xSpeed += d.getFrontOffsetX();
+                        ySpeed += d.getFrontOffsetY();
+                        zSpeed += d.getFrontOffsetZ();
                     }
                 }
 
                 final TripleCoord global = localToGlobal(
                         local.x, local.y, local.z,
-                        x, y, z,
-                        o, isMirrored, getPattern().getBlockBounds());
+                        pos.getX(), pos.getY(), pos.getZ(),
+                        te.getOrientation(), te.getMirror(), getPattern().getBlockBounds());
 
                 spawnBreakParticle(world, te, global, xSpeed * scaleVec, ySpeed * scaleVec, zSpeed * scaleVec);
             }
@@ -225,9 +223,10 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
 
     @Override
     @SideOnly(Side.CLIENT)
-    public AxisAlignedBB getSelectedBoundingBoxFromPool(World world, int x, int y, int z)
+    public AxisAlignedBB getSelectedBoundingBox(World world, BlockPos pos)
     {
-        return EMPTY_BOUNDS;
+        //return EMPTY_BOUNDS;
+        return world.getTileEntity(pos).getRenderBoundingBox();
     }
 
 
@@ -235,15 +234,17 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
     //       S t r u c t u r e   B l o c k   C o d e
     //=======================================================
 
+    public static final PropertyBool propMirror = PropertyBool.create("mirror");
+
     /**
      * checks if meta is mirrored
      *
-     * @param meta block metadata
+     * @param state block state
      * @return true if mirrored else false
      */
-    public static boolean isMirrored(int meta)
+    public static boolean isMirrored(IBlockState state)
     {
-        return (meta & flagMirrored) != 0;
+        return (Boolean)state.getValue(propMirror);
     }
 
     /**
@@ -254,12 +255,13 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
      * @param y     y coord
      * @param z     z coord
      * @param hash  structure hash
-     * @param block changed block
+     * @param pos  position of the changed block
+     * @param state block state
      */
-    public static void onSharedNeighbourBlockChange(World world, int x, int y, int z, int hash, Block block)
-    {
-        final IStructureTE te = (IStructureTE) world.getTileEntity(x, y, z);
-        final int meta = world.getBlockMetadata(x, y, z) & maskMeta;
+    public static void onSharedNeighbourBlockChange(IBlockAccess world, BlockPos pos, int hash, Block neibourBlock, IBlockState state)
+    {//todo complete
+        /*final IStructureTE te = (IStructureTE) world.getTileEntity(pos);
+        final int meta = world.getBlockMetadata(x) & maskMeta;
         final SteamNSteelStructureBlock sb = StructureRegistry.getStructureBlock(te.getRegHash());
 
         if (sb == null)
@@ -299,7 +301,7 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
 
                 return;
             }
-        }
+        }*/
     }
 
     private static boolean neighbourCheck(int meta, int nMeta, Block block)
@@ -307,11 +309,15 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
         return !(meta == nMeta && (block instanceof StructureShapeBlock || block instanceof SteamNSteelStructureBlock));
     }
 
-    public void formStructure(World world, TripleCoord origin, int meta, int flag)
+    public void formStructure(World world, TripleCoord origin, IBlockState state, int flag)
     {
-        final TripleIterator itr = getPattern().getFormItr();
-        final Orientation orientation = getdecodedOrientation(meta);
-        final boolean isMirrored = isMirrored(meta);
+        final TripleIterator itr = getPattern().getStructureItr();
+        final EnumFacing orientation = (EnumFacing) state.getValue(FACING);
+        final boolean isMirrored = isMirrored(state);
+        final IBlockState shapeState = ModBlock.structureShape
+                .getDefaultState()
+                .withProperty(propMirror, isMirrored)
+                .withProperty(FACING, orientation);
 
         while (itr.hasNext())
         {
@@ -322,106 +328,101 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
                 continue;
             }
 
-            final WorldBlockCoord blockCoord = bindLocalToGlobal(origin, local, orientation, isMirrored, getPattern().getBlockBounds());
+            final BlockPos blockCoord = bindLocalToGlobal(origin, local, orientation, isMirrored, getPattern().getBlockBounds());
 
-            world.spawnParticle("explode",
+            world.spawnParticle(EnumParticleTypes.EXPLOSION_NORMAL,
                     blockCoord.getX() + 0.5f,
                     blockCoord.getY() + 0.5f,
                     blockCoord.getZ() + 0.5f, (-0.5 + Math.random()) * 0.25f, 0.05f, (-0.5 + Math.random()) * 0.2f);
 
             if (!local.equals(ORIGIN))
             {
-                blockCoord.setBlock(world, ModBlock.structureShape, meta, flag);
+                world.setBlockState(blockCoord, shapeState, flag);
             }
 
-            final IStructureTE ssBlock = (IStructureTE) blockCoord.getTileEntity(world);
+            final IStructureTE ssBlock = (IStructureTE) world.getTileEntity(blockCoord);
 
             if (ssBlock != null)
             {
                 ssBlock.configureBlock(local, regHash);
             } else
             {
-                Logger.info("formStructure: Error te: " + local + " : " + blockCoord); //todo sub with proper error fix
+                Logger.info("formStructure: Error te: " + local + " : " + blockCoord + " : " + world.getBlockState(blockCoord)); //todo sub with proper error fix
             }
         }
     }
 
-    public static void breakStructure(World world, TripleCoord origin, StructureDefinition sd, Orientation orientation, boolean isMirrored, boolean isCreative)
+    public static void breakStructure(World world, TripleCoord origin, StructureDefinition sd, EnumFacing orientation, boolean isMirrored, boolean isCreative, boolean isSneaking)
     {
-        TripleIterator itr = sd.getFormItr();
-
-        while (itr.hasNext())
-        {
-            final TripleCoord local = itr.next();
-            final WorldBlockCoord blockCoord = bindLocalToGlobal(origin, local, orientation, isMirrored, sd.getBlockBounds());
-
-            final Block worldBlock = blockCoord.getBlock(world);
-
-            if (worldBlock instanceof StructureShapeBlock || worldBlock instanceof SteamNSteelStructureBlock)
-            {
-                final Block block = sd.getBlock(local);
-                final int meta = sd.getBlockMetadata(local.x, local.y, local.z);
-
-                blockCoord.setBlock(world,
-                        block == null ? Blocks.air : block,
-                        localToGlobal(meta, block == null ? Blocks.air : block, orientation, false),
-                        0x2);
-                //blockCoord.setBlock(world,Blocks.air);
-
-                world.removeTileEntity(blockCoord.getX(), blockCoord.getY(), blockCoord.getZ());
-            }
-        }
-    }
-
-    public static void updateExternalNeighbours(World world, TripleCoord origin, StructureDefinition sd, Orientation orientation, boolean isMirrored, boolean notifyBlocks)
-    {
-        //neighbour update
-        TripleIterator itr = sd.getFormItr();
+        final TripleIterator itr = sd.getStructureItr();
 
         while (itr.hasNext())
         {
             final TripleCoord local = itr.next();
 
-            for (ForgeDirection d : ForgeDirection.VALID_DIRECTIONS)
+            if (sd.hasBlockAt(local))
             {
-                if (!sd.hasBlockAt(local, d))
+                final BlockPos blockCoord = bindLocalToGlobal(origin, local, orientation, isMirrored, sd.getBlockBounds());
+                final IBlockState worldBlock = world.getBlockState(blockCoord);
+                final IBlockState block = sd.getBlock(local);
+
+                if (block != null && !(block instanceof IGeneralBlock))
                 {
-                    final WorldBlockCoord blockCoord = bindLocalToGlobal(
-                            origin, TripleCoord.of(
-                                    local.x + d.offsetX,
-                                    local.y + d.offsetY,
-                                    local.z + d.offsetZ),
-                            orientation, isMirrored, sd.getBlockBounds()
-                    );
+                    world.removeTileEntity(blockCoord);
 
-                    world.notifyBlockOfNeighborChange(
-                            blockCoord.getX(),
-                            blockCoord.getY(),
-                            blockCoord.getZ(),
-                            sd.getBlock(local)
-                    );
-
-                    if (notifyBlocks)
+                    if (isCreative && !isSneaking)
                     {
-                        world.markBlockForUpdate(blockCoord.getX(), blockCoord.getY(), blockCoord.getZ());
+                        world.setBlockToAir(blockCoord);
+                    }
+                    else
+                    {
+                        world.setBlockState(blockCoord, localToGlobal(block, orientation, isMirrored), 0x2);
                     }
                 }
             }
         }
     }
 
-    public static WorldBlockCoord bindLocalToGlobal(
+    public static void updateExternalNeighbours(World world, TripleCoord origin, StructureDefinition sd, EnumFacing orientation, boolean mirror, boolean notifyBlocks)
+    {
+        //neighbour update
+        TripleIterator itr = sd.getStructureItr();
+
+        while (itr.hasNext())
+        {
+            final TripleCoord local = itr.next();
+
+            for (EnumFacing d : EnumFacing.VALUES)
+            {
+                if (!sd.hasBlockAt(local, d))
+                {
+                    final BlockPos blockCoord = bindLocalToGlobal(
+                            origin, TripleCoord.of(local, d),
+                            orientation, mirror, sd.getBlockBounds()
+                    );
+
+                    if (sd.getBlock(local) instanceof IGeneralBlock)
+                    {
+                        continue;
+                    }
+
+                    world.notifyNeighborsOfStateChange(blockCoord, sd.getBlock(local).getBlock());
+                }
+            }
+        }
+    }
+
+    public static BlockPos bindLocalToGlobal(
             TripleCoord origin,
             TripleCoord local,
-            Orientation o, boolean isMirrored,
+            EnumFacing orientation, boolean isMirrored,
             TripleCoord structureSize)
     {
-        return WorldBlockCoord.of(
-                localToGlobal(
-                        local.x, local.y, local.z,
-                        origin.x, origin.y, origin.z,
-                        o, isMirrored, structureSize)
-        );
+        return localToGlobal(
+                local.x, local.y, local.z,
+                origin.x, origin.y, origin.z,
+                orientation, isMirrored, structureSize)
+                .getBlockPos();
     }
 
 
@@ -435,24 +436,27 @@ public abstract class SteamNSteelStructureBlock extends SteamNSteelMachineBlock 
         return null;
     }
 
-    public List<String> getWailaHead(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config)
+    @Override
+    public ITipList getWailaHead(ItemStack itemStack, ITipList currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config)
     {
         return currenttip;
     }
 
-    public List<String> getWailaBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config)
+    @Override
+    public ITipList getWailaBody(ItemStack itemStack, ITipList currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config)
     {
         return currenttip;
     }
 
-    public List<String> getWailaTail(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config)
+    @Override
+    public ITipList getWailaTail(ItemStack itemStack, ITipList currenttip, IWailaDataAccessor accessor, IWailaConfigHandler config)
     {
         return currenttip;
     }
 
-    public NBTTagCompound getNBTData(EntityPlayerMP player, TileEntity te, NBTTagCompound tag, World world, int x, int y, int z)
+    @Override
+    public NBTTagCompound getNBTData(TileEntity te, NBTTagCompound tag, IWailaDataAccessorServer accessor)
     {
-        //no op
-        return tag;
+        return null;
     }
 }

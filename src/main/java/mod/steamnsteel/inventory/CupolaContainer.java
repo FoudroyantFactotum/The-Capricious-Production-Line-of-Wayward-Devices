@@ -18,8 +18,6 @@ package mod.steamnsteel.inventory;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import mod.steamnsteel.api.crafting.CraftingManager;
 import mod.steamnsteel.inventory.slot.CupolaSlot;
 import mod.steamnsteel.tileentity.CupolaTE;
@@ -29,6 +27,8 @@ import net.minecraft.inventory.ICrafting;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityFurnace;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class CupolaContainer extends SteamNSteelContainer
 {
@@ -52,12 +52,11 @@ public class CupolaContainer extends SteamNSteelContainer
     }
 
     @Override
-    public void addCraftingToCrafters(ICrafting iCrafting)
-    {
-        super.addCraftingToCrafters(iCrafting);
-        iCrafting.sendProgressBarUpdate(this, 0, te.getDeviceCookTime());
-        iCrafting.sendProgressBarUpdate(this, 1, te.getFuelBurnTime());
-        iCrafting.sendProgressBarUpdate(this, 2, te.getItemCookTime());
+    public void onCraftGuiOpened(ICrafting listener) {
+        super.onCraftGuiOpened(listener);
+        listener.sendProgressBarUpdate(this, 0, te.getDeviceCookTime());
+        listener.sendProgressBarUpdate(this, 1, te.getFuelBurnTime());
+        listener.sendProgressBarUpdate(this, 2, te.getItemCookTime());
     }
 
     @Override

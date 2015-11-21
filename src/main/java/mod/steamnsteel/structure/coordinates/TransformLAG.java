@@ -17,15 +17,18 @@ package mod.steamnsteel.structure.coordinates;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import cpw.mods.fml.common.registry.GameRegistry;
-import mod.steamnsteel.structure.registry.IStructurePatternMetaCorrecter;
-import mod.steamnsteel.structure.registry.MetaCorrecter.SMCStairs;
+import mod.steamnsteel.structure.registry.MetaCorrecter.DefaultMinecraftRotation;
+import mod.steamnsteel.structure.registry.MetaCorrecter.IStructurePatternStateCorrecter;
+import mod.steamnsteel.structure.registry.StateMatcher.IStateMatcher;
+import mod.steamnsteel.structure.registry.StateMatcher.StairMatcher;
 import mod.steamnsteel.structure.registry.StructureDefinition;
-import mod.steamnsteel.utility.Orientation;
+import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
-import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraftforge.oredict.OreDictionary;
 
 import java.util.List;
@@ -33,53 +36,77 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static mod.steamnsteel.block.SteamNSteelStructureBlock.isMirrored;
-import static mod.steamnsteel.utility.Orientation.getdecodedOrientation;
 
 /**
  * This class is used as a utility class holding onto the function implementations that involve a basic transform.
- * Most of the code speaks for it's self.
  */
 public final class TransformLAG
 {
-    private static final ImmutableMap<Block,IStructurePatternMetaCorrecter> META_CORRECTOR;
+    public static void initStatic()
+    {
+        //noop
+    }
 
-    static {
-        final Builder<Block, IStructurePatternMetaCorrecter> builder = ImmutableMap.builder();
-        final IStructurePatternMetaCorrecter stairs = new SMCStairs();
+    private static final ImmutableMap<Block,IStructurePatternStateCorrecter> META_CORRECTOR;
+    private static final ImmutableMap<Block,IStateMatcher> STATE_MATCHER;
 
-        for (ItemStack itemSk: OreDictionary.getOres("stairWood"))//all oreDic stairWood
-            builder.put(Block.getBlockFromItem(itemSk.getItem()), stairs);
+    static
+    {
+        final String[] minecraftStairs = {
+                "minecraft:stone_stairs",
+                "minecraft:brick_stairs",
+                "minecraft:stone_brick_stairs",
+                "minecraft:nether_brick_stairs",
+                "minecraft:sandstone_stairs",
+                "minecraft:quartz_stairs"
+        };
 
-        registerMetaCorrector(builder, "minecraft:stone_stairs"          , stairs);
-        registerMetaCorrector(builder, "minecraft:brick_stairs"          , stairs);
-        registerMetaCorrector(builder, "minecraft:stone_brick_stairs"    , stairs);
-        registerMetaCorrector(builder, "minecraft:nether_brick_stairs"   , stairs);
-        registerMetaCorrector(builder, "minecraft:sandstone_stairs"      , stairs);
-        registerMetaCorrector(builder, "minecraft:quartz_stairs"         , stairs);
+        final Builder<Block, IStructurePatternStateCorrecter> builderS = ImmutableMap.builder();
+        final Builder<Block, IStateMatcher> builderM = ImmutableMap.builder();
 
-        META_CORRECTOR = builder.build();
+        final IStructurePatternStateCorrecter defaultRotation = new DefaultMinecraftRotation();
+        final IStateMatcher stairMatcher = new StairMatcher();
+
+        for (final ItemStack itemSk: OreDictionary.getOres("stairWood"))//all oreDic stairWood
+        {
+            builderS.put(Block.getBlockFromItem(itemSk.getItem()), defaultRotation);
+            builderM.put(Block.getBlockFromItem(itemSk.getItem()), stairMatcher);
+        }
+
+        for (final String s: minecraftStairs)
+        {
+            registerStateCorrector(builderS, s, defaultRotation);
+            registerStateMatcher(builderM,   s, stairMatcher);
+        }
+
+        META_CORRECTOR = builderS.build();
+        STATE_MATCHER = builderM.build();
     }
 
     /**
-     * Used to validate meta correctors.
+     * Used to validate state correctors.
      * @param builder   ImmutableMap builder
      * @param blockName block to register
-     * @param metaCorrecter correcter class
+     * @param stateCorrecter correcter class
      */
-    private static void registerMetaCorrector(Builder<Block, IStructurePatternMetaCorrecter> builder, String blockName, IStructurePatternMetaCorrecter metaCorrecter)
+    private static void registerStateCorrector(Builder<Block, IStructurePatternStateCorrecter> builder, String blockName, IStructurePatternStateCorrecter stateCorrecter)
     {
-        final int blockDividePoint = blockName.indexOf(':');
+        final Block block = Block.getBlockFromName(blockName);
 
-        Block block = GameRegistry.findBlock(
-                blockName.substring(0, blockDividePoint),
-                blockName.substring(blockDividePoint + 1, blockName.length())
-        );
+        checkNotNull(block,          blockName + " : Is missing from game Registry");
+        checkNotNull(stateCorrecter, blockName + " : stateCorrecter is null");
 
-        checkNotNull(block,         blockName + " : Is missing from game Registry");
-        checkNotNull(metaCorrecter, blockName + " : metaCorrecter class is null");
+        builder.put(block, stateCorrecter);
+    }
 
-        builder.put(block, metaCorrecter);
+    private static void registerStateMatcher(Builder<Block, IStateMatcher> builder, String blockName, IStateMatcher stateMatcher)
+    {
+        final Block block = Block.getBlockFromName(blockName);
+
+        checkNotNull(block,        blockName + " : Is missing from game Registry");
+        checkNotNull(stateMatcher, blockName + " : stateMatcher is null");
+
+        builder.put(block, stateMatcher);
     }
 
 
@@ -89,19 +116,19 @@ public final class TransformLAG
 
 
     private static final int[][][] rotationMatrix = {
+            {{1, 0}, {0, 1}}, // north
             {{-1, 0}, {0, -1}}, //south
             {{0, 1}, {-1, 0}}, //west
-            {{1, 0}, {0, 1}}, // north
             {{0, -1}, {1, 0}}, //east
     };
 
     //from external with local to master
     public static TripleCoord localToGlobal(int lx, int ly, int lz,
                                             int gx, int gy, int gz,
-                                            Orientation o, boolean ismirrored,
+                                            EnumFacing orientation, boolean ismirrored,
                                             TripleCoord strucSize)
     {
-        final int rotIndex = o.encode();
+        final int rotIndex = orientation.ordinal()-2;
 
         if (ismirrored)
         {
@@ -119,75 +146,114 @@ public final class TransformLAG
         );
     }
 
-    public static int localToGlobalDirection(int fdOld, int meta)
+    public static int localToGlobalDirection(int ld, EnumFacing o, boolean mirror)
     {
-        final Orientation o = getdecodedOrientation(meta);
-        final boolean isMirrored = isMirrored(meta);
-
         int fdNew = 0;
 
-        for (ForgeDirection d : ForgeDirection.VALID_DIRECTIONS)
+        for (EnumFacing d : EnumFacing.VALUES)
         {
-            if ((fdOld & d.flag) != 0)
+            if (SteamNSteelStructureTE.isSide(ld, o))
             {
-                fdNew |= localToGlobal(d, o, isMirrored).flag;
+                fdNew |= flagEnumFacing(localToGlobal(d, o, mirror));
             }
         }
 
         return fdNew;
     }
 
+    public static int flagEnumFacing(final EnumFacing f)
+    {
+        return 1 << f.ordinal();
+    }
+
     //direction - rotate
-    public static ForgeDirection localToGlobal(ForgeDirection d, Orientation o, boolean ismirrored)
+    public static EnumFacing localToGlobal(EnumFacing direction, EnumFacing orientation, boolean ismirrored)
     {
         //switch from local direction to global
-        if (ismirrored && (d == ForgeDirection.NORTH || d == ForgeDirection.SOUTH))
+        if (ismirrored && (direction == EnumFacing.NORTH || direction == EnumFacing.SOUTH))
         {
-            d = d.getOpposite();
+            direction = direction.getOpposite();
         }
 
-        switch (o)
+        if (direction == EnumFacing.DOWN || direction == EnumFacing.UP)
+        {
+            return direction;
+        }
+
+        switch (orientation)
         {
             case SOUTH:
-                d = d.getRotation(ForgeDirection.DOWN).getRotation(ForgeDirection.DOWN);
+                direction = direction.rotateY().rotateY();
                 break;
             case WEST:
-                d = d.getRotation(ForgeDirection.DOWN);
+                direction = direction.rotateYCCW();
                 break;
             case EAST:
-                d = d.getRotation(ForgeDirection.UP);
+                direction = direction.rotateY();
                 break;
             default://North
         }
 
-        return d;
+        return direction;
     }
 
-    //meta corrector
-    public static int localToGlobal(int meta, Block block, Orientation o, boolean ismirrored)
+    //state modification on direction change.
+    public static IBlockState localToGlobal(IBlockState state, EnumFacing orientation, boolean ismirrored)
     {
-        if (META_CORRECTOR.containsKey(block))
+        if (META_CORRECTOR.containsKey(state.getBlock()))
         {
-            return META_CORRECTOR.get(block).correctMeta((byte) meta, o, ismirrored);
+            return META_CORRECTOR.get(state.getBlock()).alterBlockState(state, orientation, ismirrored);
         }
 
-        return meta;
+        return state;
+    }
+
+    //state matcher. FIXME Prob doesn't belong here.
+    public static boolean doBlockStatesMatch(IBlockState b1, IBlockState b2)
+    {
+        if (STATE_MATCHER.containsKey(b1.getBlock()))
+        {
+            return STATE_MATCHER.get(b1.getBlock()).matchBlockState(b1, b2);
+        }
+        else
+        {
+            //complete check against all properties
+            /*
+            final ImmutableMap<String, IProperty> b2Props = b2.getProperties();
+
+            for (final IProperty prop : (Collection<IProperty>) b1.getPropertyNames())
+            {
+                if (!b2Props.containsKey(prop))
+                {
+                    return false;
+                }
+
+                final Comparable b2Prop = (Comparable) b2Props.get(prop);
+
+                if (b1.getValue(prop).compareTo(b2Prop) != 0)
+                {
+                    return false;
+                }
+            }*/
+
+            return true;
+        }
     }
 
     //collision boxes
     public static void localToGlobalCollisionBoxes(
             int x, int y, int z,
             AxisAlignedBB aabb, List<AxisAlignedBB> boundingBoxList, float[][] collB,
-            Orientation o, boolean isMirrored, TripleCoord size)
+            EnumFacing orientation, boolean isMirrored, TripleCoord size)
     {
-        final int[][] matrix = rotationMatrix[o.encode()];
+        final int[][] matrix = rotationMatrix[orientation.ordinal()-2];
 
-        final int ntx = o == Orientation.SOUTH || o == Orientation.WEST? -1:0;
-        final int ntz = o == Orientation.SOUTH || o == Orientation.EAST? -1:0;
+        final int ntx = orientation == EnumFacing.SOUTH || orientation == EnumFacing.WEST? -1:0;
+        final int ntz = orientation == EnumFacing.SOUTH || orientation == EnumFacing.EAST? -1:0;
         final int tx = matrix[0][0] * ntx + matrix[0][1] * ntz;
         final int tz = matrix[1][0] * ntx + matrix[1][1] * ntz;
 
-        final AxisAlignedBB bb = AxisAlignedBB.getBoundingBox(0, 0, 0, 0, 0, 0);
+        final MutableAxisAlignedBB bb = MutableAxisAlignedBB.fromBounds(0, 0, 0, 0, 0, 0);
 
         for (final float[] f: collB)
         {
@@ -205,44 +271,56 @@ public final class TransformLAG
             bb.maxY = y + f[4];
             bb.maxZ = z + max(c1z, c2z) + tz;
 
-            if (aabb.intersectsWith(bb))
+            if (bb.intersectsWith(aabb))
             {
-                boundingBoxList.add(bb.copy());
+                boundingBoxList.add(bb.getAxisAlignedBB());
             }
         }
     }
 
     //Bounding box
     public static AxisAlignedBB localToGlobalBoundingBox(
-            int gx, int gy, int gz,
+            BlockPos pos,
             TripleCoord local,
-            StructureDefinition sd, Orientation o, boolean ismirrored)
+            StructureDefinition sd, EnumFacing orientation, boolean ismirrored)
     {
         final int l_lbx = local.x - sd.getMasterLocation().x;
         final int l_lby = local.y - sd.getMasterLocation().y;
         final int l_lbz = local.z - sd.getMasterLocation().z;
 
-        final int l_ubx = local.x + sd.getBlockBounds().x;
-        final int l_uby = local.y + sd.getBlockBounds().y;
-        final int l_ubz = local.z + sd.getBlockBounds().z;
+        final int l_ubx = local.x + sd.getBlockBounds().x - sd.getMasterLocation().x;
+        final int l_uby = local.y + sd.getBlockBounds().y - sd.getMasterLocation().y;
+        final int l_ubz = local.z + sd.getBlockBounds().z - sd.getMasterLocation().z;
 
         final TripleCoord lb
-                = localToGlobal(l_lbx, l_lby, l_lbz, gx, gy, gz, o, ismirrored, sd.getBlockBounds());
+                = localToGlobal(l_lbx, l_lby, l_lbz, pos.getX(), pos.getY(), pos.getZ(), orientation, ismirrored, sd.getBlockBounds());
 
         final TripleCoord ub
-                = localToGlobal(l_ubx, l_uby, l_ubz, gx, gy, gz, o, ismirrored, sd.getBlockBounds());
+                = localToGlobal(l_ubx, l_uby, l_ubz, pos.getX(), pos.getY(), pos.getZ(), orientation, ismirrored, sd.getBlockBounds());
 
-        final int[][] matrix = rotationMatrix[o.encode()];
+        final int[][] matrix = rotationMatrix[orientation.ordinal()-2];
 
         //todo fix fish-e if statement
-        final int ntx = o == Orientation.SOUTH || o == Orientation.WEST? -1:0;
-        final int ntz = o == Orientation.SOUTH || o == Orientation.EAST? -1:0;
+        final int ntx = orientation == EnumFacing.SOUTH || orientation == EnumFacing.WEST? -1:0;
+        final int ntz = orientation == EnumFacing.SOUTH || orientation == EnumFacing.EAST? -1:0;
         final int tx = matrix[0][0] * ntx + matrix[0][1] * ntz;
         final int tz = matrix[1][0] * ntx + matrix[1][1] * ntz;
 
-        return AxisAlignedBB.getBoundingBox(
+        return AxisAlignedBB.fromBounds(
                 lb.x + tx, lb.y, lb.z + tz,
                 ub.x + tx, ub.y, ub.z + tz
         );
+    }
+
+    public static TripleCoord transformFromDefinitionToMaster(StructureDefinition sd, TripleCoord loc)
+    {
+        final TripleCoord newLoc = TripleCoord.of(loc);
+        final TripleCoord ml = sd.getMasterLocation();
+
+        newLoc.x -= ml.x;
+        newLoc.y -= ml.y;
+        newLoc.z -= ml.z;
+
+        return newLoc;
     }
 }

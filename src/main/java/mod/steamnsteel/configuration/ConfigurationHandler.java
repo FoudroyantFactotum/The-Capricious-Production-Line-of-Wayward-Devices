@@ -18,17 +18,18 @@ package mod.steamnsteel.configuration;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
-import cpw.mods.fml.client.event.ConfigChangedEvent;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import mod.steamnsteel.TheMod;
 import mod.steamnsteel.utility.log.Logger;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkState;
 
 @SuppressWarnings("NonSerializableFieldInSerializableClass")
 public enum ConfigurationHandler

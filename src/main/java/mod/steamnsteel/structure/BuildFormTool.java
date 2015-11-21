@@ -15,7 +15,6 @@
  */
 package mod.steamnsteel.structure;
 
-import cpw.mods.fml.common.network.NetworkRegistry;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.item.tool.SSToolShovel;
 import mod.steamnsteel.library.Material;
@@ -23,17 +22,21 @@ import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.structure.coordinates.TripleIterator;
 import mod.steamnsteel.structure.net.StructurePacket;
 import mod.steamnsteel.structure.net.StructurePacketOption;
+import mod.steamnsteel.structure.registry.GeneralBlock.IGeneralBlock;
 import mod.steamnsteel.structure.registry.StructureDefinition;
 import mod.steamnsteel.structure.registry.StructureRegistry;
 import mod.steamnsteel.utility.ModNetwork;
-import mod.steamnsteel.utility.Orientation;
-import mod.steamnsteel.utility.position.WorldBlockCoord;
+import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
 
-import static mod.steamnsteel.block.SteamNSteelStructureBlock.bindLocalToGlobal;
-import static mod.steamnsteel.block.SteamNSteelStructureBlock.updateExternalNeighbours;
+import static mod.steamnsteel.block.SteamNSteelStructureBlock.*;
+import static mod.steamnsteel.structure.coordinates.TransformLAG.doBlockStatesMatch;
 import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobal;
 
 public class BuildFormTool extends SSToolShovel
@@ -41,29 +44,31 @@ public class BuildFormTool extends SSToolShovel
     public BuildFormTool()
     {
         super(Material.STEEL);
+        setUnlocalizedName(getUnlocalizedName() + "_form");
     }
 
     @Override
-    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side, float hitX, float hitY, float hitZ)
+    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ)
     {
         if (!world.isRemote)
         {
-            final StructureSearchResult result = uberStructureSearch(world, x, y, z);
+            final StructureSearchResult result = uberStructureSearch(world, pos.getX(), pos.getY(), pos.getZ());
 
             if (result != null)
             {
-                final int meta = result.orientation.encode() | (result.isMirrored ? SteamNSteelStructureBlock.flagMirrored : 0x0);
+                final IBlockState state = result.block.getDefaultState()
+                        .withProperty(BlockDirectional.FACING, result.orientation)
+                        .withProperty(propMirror, result.isMirrored);
 
-                world.setBlock(result.origin.x, result.origin.y, result.origin.z, result.block, meta, 0x2);
-                result.block.formStructure(world, result.origin, meta, 0x2);
+
+                world.setBlockState(result.origin.getBlockPos(), state, 0x2);
+                result.block.formStructure(world, result.origin, state, 0x2);
 
                 updateExternalNeighbours(world, result.origin, result.block.getPattern(), result.orientation, result.isMirrored, true);
 
                 ModNetwork.network.sendToAllAround(
-                        new StructurePacket(result.origin.x, result.origin.y, result.origin.z,
-                                result.block.getRegHash(), result.orientation, result.isMirrored,
-                                StructurePacketOption.BUILD),
-                        new NetworkRegistry.TargetPoint(world.provider.dimensionId, x, y, z, 30)
+                        new StructurePacket(result.origin.getBlockPos(), result.block.getRegHash(), result.orientation, result.isMirrored, StructurePacketOption.BUILD),
+                        new NetworkRegistry.TargetPoint(world.provider.getDimensionId(), result.origin.x, result.origin.y, result.origin.z, 30)
                 );
             }
         }
@@ -73,10 +78,11 @@ public class BuildFormTool extends SSToolShovel
 
     /**
      * Performs complete search on world with at the location
+     *
      * @param world target world
-     * @param x x location
-     * @param y y location
-     * @param z z location
+     * @param x     x location
+     * @param y     y location
+     * @param z     z location
      * @return returns {@link mod.steamnsteel.structure.BuildFormTool.StructureSearchResult StructureSearchResult} or null for no result.
      */
     private StructureSearchResult uberStructureSearch(World world, int x, int y, int z)
@@ -88,30 +94,45 @@ public class BuildFormTool extends SSToolShovel
             final StructureDefinition sd = ssBlock.getPattern();
 
             final TripleCoord tl = sd.getToolFormLocation();
-            final TripleCoord t2 = sd.getMasterLocation();
 
             //todo also search mirrored (currently disabled)
-            //every Direction nsew
+            //every Direction swne
             nextOrientation:
-            for (Orientation o : Orientation.values())
+            for (EnumFacing o: EnumFacing.HORIZONTALS)
             {
                 final TripleCoord origin =
                         localToGlobal(
-                                -tl.x - t2.x, -tl.y - t2.y, -tl.z - t2.z,
-                                x,            y,            z,
+                                -tl.x, -tl.y, -tl.z,
+                                x, y, z,
                                 o, false, sd.getBlockBounds()
                         );
 
-                final TripleIterator itr = sd.getConstructionItr();
+                final TripleIterator itr = sd.getStructureItr();
 
                 while (itr.hasNext())
                 {
                     final TripleCoord local = itr.next();
-                    final WorldBlockCoord coord = bindLocalToGlobal(origin, local, o, false, sd.getBlockBounds());
+                    final BlockPos coord = bindLocalToGlobal(origin, local, o, false, sd.getBlockBounds());
 
-                    if (sd.getBlock(local) == null || sd.getBlock(local) != coord.getBlock(world))
+                    final IBlockState b = sd.getBlock(local);
+                    final IBlockState ncwb = world.getBlockState(coord);
+                    final IBlockState wb = ncwb.getBlock().getActualState(ncwb, world, coord);
+
+                    if (b instanceof IGeneralBlock)
                     {
-                        continue nextOrientation;
+                        final IGeneralBlock gb = (IGeneralBlock) b;
+
+                        if (!gb.canBlockBeUsed(wb, local))
+                        {
+                            continue nextOrientation;
+                        }
+                    }
+                    else
+                    {
+                        if (b.getBlock() != wb.getBlock() || !doBlockStatesMatch(localToGlobal(b, o, false), wb))
+                        {
+                            continue nextOrientation;
+                        }
                     }
                 }
 
@@ -137,7 +158,7 @@ public class BuildFormTool extends SSToolShovel
     private static final class StructureSearchResult
     {
         public SteamNSteelStructureBlock block;
-        public Orientation orientation;
+        public EnumFacing orientation;
         public boolean isMirrored;
         public TripleCoord origin;
     }

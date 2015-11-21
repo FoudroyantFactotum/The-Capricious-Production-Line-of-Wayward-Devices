@@ -17,12 +17,10 @@
 package mod.steamnsteel;
 
 import com.google.common.base.Optional;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.event.*;
-import cpw.mods.fml.common.network.NetworkRegistry;
 import mod.steamnsteel.api.crafting.CraftingManager;
 import mod.steamnsteel.api.crafting.IAlloyManager;
+import mod.steamnsteel.api.steamtransport.ISteamTransportRegistry;
+import mod.steamnsteel.api.SteamNSteelInitializedEvent;
 import mod.steamnsteel.configuration.ConfigurationHandler;
 import mod.steamnsteel.crafting.Recipes;
 import mod.steamnsteel.crafting.alloy.AlloyManager;
@@ -31,15 +29,20 @@ import mod.steamnsteel.library.ModBlock;
 import mod.steamnsteel.library.ModBlockParts;
 import mod.steamnsteel.library.ModItem;
 import mod.steamnsteel.proxy.Proxies;
+import mod.steamnsteel.structure.coordinates.TransformLAG;
 import mod.steamnsteel.structure.registry.StructureRegistry;
 import mod.steamnsteel.utility.ModNetwork;
-import mod.steamnsteel.utility.midi.SongList;
 import mod.steamnsteel.waila.WailaProvider;
 import mod.steamnsteel.world.LoadSchematicFromFileCommand;
 import mod.steamnsteel.world.LoadSchematicFromResourceCommand;
 import mod.steamnsteel.world.WorldGen;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.*;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
 
 @SuppressWarnings({"WeakerAccess", "MethodMayBeStatic"})
 @Mod(modid = TheMod.MOD_ID, name = TheMod.MOD_NAME, version = TheMod.MOD_VERSION, useMetadata = true, guiFactory = TheMod.MOD_GUI_FACTORY)
@@ -78,6 +81,8 @@ public class TheMod
         ModNetwork.init();
         WailaProvider.init();
         ModBlockParts.init();
+        Proxies.render.preInit();
+        TransformLAG.initStatic();
     }
 
     @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
@@ -94,30 +99,27 @@ public class TheMod
         FMLCommonHandler.instance().bus().register(ConfigurationHandler.INSTANCE);
 
         Recipes.init();
-        Proxies.render.init();
         WorldGen.init();
         ModBlock.registerTileEntities();
+        Proxies.render.init();
         StructureRegistry.loadRegisteredPatterns();
-        SongList.loadSongSheets();
     }
 
     @SuppressWarnings("UnusedParameters")
     @Mod.EventHandler
     public void onFMLPostInitialization(FMLPostInitializationEvent event)
     {
-        // TODO: Handle interaction with other mods, complete your setup based on this.
-    }
+        ISteamTransportRegistry steamTransportRegistry = null;
+        SteamNSteelInitializedEvent initializedEvent = new SteamNSteelInitializedEvent(steamTransportRegistry);
 
-    @Mod.EventHandler
-    public void onServerStartingLoad(FMLServerStartingEvent event)
-    {
-        event.registerServerCommand(new StructureRegistry.CommandReloadStructures());
+        MinecraftForge.EVENT_BUS.post(initializedEvent);
     }
 
     @Mod.EventHandler
     public void onServerStarting(FMLServerStartingEvent event) {
         event.registerServerCommand(new LoadSchematicFromResourceCommand());
         event.registerServerCommand(new LoadSchematicFromFileCommand());
+        event.registerServerCommand(new StructureRegistry.CommandReloadStructures());
     }
 
     @Mod.EventHandler
