@@ -61,6 +61,7 @@ public final class ModBlock
     public static final SteamNSteelStructureBlock ballMill = new BallMillBlock();
     public static final SteamNSteelStructureBlock blastFurnace = new BlastFurnaceBlock();
     public static final SteamNSteelStructureBlock boiler = new BoilerBlock();
+    public static final SteamNSteelStructureBlock playerPiano = new PlayerPiano();
     public static final SteamNSteelBlock structureShape = new StructureShapeBlock();
 
     public static final SteamNSteelBlock cupola = new CupolaBlock();
@@ -95,6 +96,7 @@ public final class ModBlock
         GameRegistry.registerTileEntity(BallMillTE.class, getTEName(BallMillBlock.NAME));
         GameRegistry.registerTileEntity(BlastFurnaceTE.class, getTEName(BlastFurnaceBlock.NAME));
         GameRegistry.registerTileEntity(BoilerTE.class, getTEName(BoilerBlock.NAME));
+        GameRegistry.registerTileEntity(PlayerPianoTE.class, getTEName(PlayerPiano.NAME));
         GameRegistry.registerTileEntity(CupolaTE.class, getTEName(CupolaBlock.NAME));
         GameRegistry.registerTileEntity(StructureShapeTE.class, getTEName(StructureShapeBlock.NAME));
         GameRegistry.registerTileEntity(RemnantRuinChestTE.class, getTEName(RemnantRuinChestBlock.NAME));
@@ -117,6 +119,7 @@ public final class ModBlock
         registerStructures(ballMill, BallMillBlock.NAME);
         registerStructures(blastFurnace, BlastFurnaceBlock.NAME);
         registerStructures(boiler, BoilerBlock.NAME);
+        registerStructures(playerPiano, PlayerPiano.NAME);
 
         GameRegistry.registerBlock(pipe, PipeBlock.NAME);
         GameRegistry.registerBlock(pipeValve, PipeValveBlock.NAME);

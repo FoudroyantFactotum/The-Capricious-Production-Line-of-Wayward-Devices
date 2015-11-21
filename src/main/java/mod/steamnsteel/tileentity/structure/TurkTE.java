@@ -1,23 +1,8 @@
 package mod.steamnsteel.tileentity.structure;
 
-import mod.steamnsteel.block.structure.TurkStructure;
-import mod.steamnsteel.structure.coordinates.TripleCoord;
-import mod.steamnsteel.tileentity.SteamNSteelTE;
-import mod.steamnsteel.utility.boardGame.TurkChess.GameChess;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.common.util.ForgeDirection;
-import net.minecraftforge.fluids.Fluid;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidTankInfo;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
-public class TurkTE extends SteamNSteelStructureTE
+public class TurkTE extends StructureTemplate
 {
-    public final Executor e = Executors.newSingleThreadExecutor();
+    /*public final Executor e = Executors.newSingleThreadExecutor();
     public GameChess chess = new GameChess();
 
     public TurkTE()
@@ -219,5 +204,5 @@ public class TurkTE extends SteamNSteelStructureTE
     public String toString()
     {
         return "";
-    }
+    }*/
 }

@@ -4,10 +4,17 @@ import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.block.structure.PlayerPiano;
 import mod.steamnsteel.client.renderer.model.PlayerPianoModel;
 import mod.steamnsteel.tileentity.structure.PlayerPianoTE;
-import mod.steamnsteel.utility.Orientation;
+import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
@@ -15,7 +22,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.BitSet;
 
-public class PlayerPianoTESR extends SteamNSteelTESR
+public class PlayerPianoTESR extends TileEntitySpecialRenderer
 {
     public static final ResourceLocation TEXTURE = getResourceLocation(PlayerPiano.NAME);
     private static final ImmutableTriple<Float, Float, Float> SCALE = ImmutableTriple.of(1.0f, 1.0f, 1.0f);
@@ -35,7 +42,7 @@ public class PlayerPianoTESR extends SteamNSteelTESR
     }
 
     @Override
-    public void renderTileEntityAt(TileEntity tileEntity, double x, double y, double z, float tick)
+    public void renderTileEntityAt(TileEntity tileEntity, double x, double y, double z, float partialTicks, int destroyStage)
     {
         if (tileEntity instanceof PlayerPianoTE)
         {
@@ -56,10 +63,11 @@ public class PlayerPianoTESR extends SteamNSteelTESR
 
     private void renderPlayerPiano(PlayerPianoTE te)
     {
-        final int x = te.xCoord;
-        final int y = te.yCoord;
-        final int z = te.zCoord;
-        final World world = te.getWorldObj();
+        final BlockPos pos = te.getPos();
+        final int x = te.getPos().getX();
+        final int y = te.getPos().getY();
+        final int z = te.getPos().getZ();
+        final World world = te.getWorld();
 
         GL11.glPushMatrix();
 
@@ -68,11 +76,12 @@ public class PlayerPianoTESR extends SteamNSteelTESR
         GL11.glTranslatef(0.5f,0,0.5f);
 
         // Orient the model to match the placement
-        final int metadata = world.getBlockMetadata(x, y, z);
-        final Orientation orientation = Orientation.getdecodedOrientation(metadata);
+        final IBlockState state = world.getBlockState(pos);
+        final EnumFacing orientation = (EnumFacing) state.getValue(BlockDirectional.FACING);
+        final boolean mirror = (Boolean) state.getValue(SteamNSteelStructureBlock.propMirror);
 
         // If block is mirrored, flip faces and scale along -Z
-        if ((metadata & SteamNSteelStructureBlock.flagMirrored) != 0) {
+        if (mirror) {
             GL11.glFrontFace(GL11.GL_CW);
             GL11.glScalef(1, 1, -1);
 
@@ -112,28 +121,29 @@ public class PlayerPianoTESR extends SteamNSteelTESR
         }
 
 
-        final TextureManager texturemanager = field_147501_a.field_147553_e;
+        final TextureManager texturemanager = Minecraft.getMinecraft().getTextureManager();
         final int tex = texturemanager.getTexture(te.texturePath).getGlTextureId();
 
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, tex);
-        //GL11.glTexParameter(tex,GL11.GL_);
+
         //SheetMusic!!!!
         //model.renderSheet();
         final double displayAmount = 500/8048.0;
         final double shift = te.songReadHeadPos;
-        final Tessellator tess = Tessellator.instance;
+        final Tessellator tess = Tessellator.getInstance();
+        final WorldRenderer wr = tess.getWorldRenderer();
         GL11.glTranslatef(0.0f, 0.8f, -1.8f);
-        tess.startDrawingQuads();
+        wr.startDrawingQuads();
         {
-            tess.addVertexWithUV(1.33031, 0.66802,1.350171,1,0.0+shift);
-            tess.addVertexWithUV(0.7103, 0.66802, 1.350171,0,0.0+shift);
-            tess.addVertexWithUV(0.67103, 0.46830, 1.25589,0,-0.5*displayAmount+shift);
-            tess.addVertexWithUV(1.33031, 0.46830,1.25589,1,-0.5*displayAmount+shift);
+            wr.addVertexWithUV(1.33031, 0.66802, 1.350171, 1, 0.0 + shift);
+            wr.addVertexWithUV(0.7103, 0.66802, 1.350171, 0, 0.0 + shift);
+            wr.addVertexWithUV(0.67103, 0.46830, 1.25589, 0, -0.5 * displayAmount + shift);
+            wr.addVertexWithUV(1.33031, 0.46830, 1.25589, 1, -0.5 * displayAmount + shift);
 
-            tess.addVertexWithUV(0.7103, 0.66802, 1.350171,0,0.0*displayAmount+shift);
-            tess.addVertexWithUV(1.33031, 0.66802,1.350171,1,0.0*displayAmount+shift);
-            tess.addVertexWithUV(1.33031, 0.46830+0.41802,1.25589, 1,0.5*displayAmount+shift);
-            tess.addVertexWithUV(0.7103, 0.46830+0.41802, 1.25589,0,0.5*displayAmount+shift);
+            wr.addVertexWithUV(0.7103, 0.66802, 1.350171, 0, 0.0 * displayAmount + shift);
+            wr.addVertexWithUV(1.33031, 0.66802, 1.350171, 1, 0.0 * displayAmount + shift);
+            wr.addVertexWithUV(1.33031, 0.46830 + 0.41802, 1.25589, 1, 0.5 * displayAmount + shift);
+            wr.addVertexWithUV(0.7103, 0.46830 + 0.41802, 1.25589, 0, 0.5 * displayAmount + shift);
         }
         tess.draw();
         GL11.glTranslatef(0.0f, -0.8f, 1.8f);

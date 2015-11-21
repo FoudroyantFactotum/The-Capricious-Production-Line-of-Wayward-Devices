@@ -49,6 +49,18 @@ public class SongList
         }
 
         @Override
+        public void setBlurMipmap(boolean p_174936_1_, boolean p_174936_2_)
+        {
+
+        }
+
+        @Override
+        public void restoreLastBlurMipmap()
+        {
+
+        }
+
+        @Override
         public void loadTexture(IResourceManager rm) throws IOException
         {
             BufferedImage bf;

@@ -1,18 +1,8 @@
 package mod.steamnsteel.tileentity.structure;
 
-import mod.steamnsteel.block.structure.DanseMacabreStructure;
-import mod.steamnsteel.structure.coordinates.TripleCoord;
-import mod.steamnsteel.tileentity.SteamNSteelTE;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.common.util.ForgeDirection;
-import net.minecraftforge.fluids.Fluid;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidTankInfo;
-
-public class DanseMacabreTE extends SteamNSteelStructureTE
+public class DanseMacabreTE extends StructureTemplate
 {
+
     public volatile Boolean keepAlive = true;
 
     public volatile double bellRingersPos1 = 0.0;
@@ -30,7 +20,7 @@ public class DanseMacabreTE extends SteamNSteelStructureTE
     public volatile boolean[] smokeOnFiddle = new boolean[88];
     public volatile boolean[] smokeOnBass = new boolean[88];
 
-    public DanseMacabreTE()
+    /*public DanseMacabreTE()
     {
         //noop
     }
@@ -223,5 +213,5 @@ public class DanseMacabreTE extends SteamNSteelStructureTE
     protected void transformDirectionsOnLoad()
     {
 
-    }
+    }*/
 }

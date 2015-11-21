@@ -4,9 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.StructureDefinitionBuilder;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
-import mod.steamnsteel.tileentity.structure.ShearerTE;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 public class ShearerStructure extends SteamNSteelStructureBlock
@@ -14,8 +12,9 @@ public class ShearerStructure extends SteamNSteelStructureBlock
     public static final String NAME = "shearer";
     public ShearerStructure()
     {
-        setBlockName(NAME);
+        setUnlocalizedName(NAME);
     }
+
     @Override
     public void spawnBreakParticle(World world, SteamNSteelStructureTE te, TripleCoord coord, float sx, float sy, float sz)
     {
@@ -60,9 +59,9 @@ public class ShearerStructure extends SteamNSteelStructureBlock
         return builder;
     }
 
-    @Override
+    /*@Override
     public TileEntity createNewTileEntity(World world, int meta)
     {
         return new ShearerTE(meta);
-    }
+    }*/
 }

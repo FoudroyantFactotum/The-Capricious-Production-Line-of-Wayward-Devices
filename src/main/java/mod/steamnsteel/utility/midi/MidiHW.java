@@ -3,6 +3,7 @@ package mod.steamnsteel.utility.midi;
 import mod.steamnsteel.tileentity.structure.DanseMacabreTE;
 import mod.steamnsteel.utility.log.Logger;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.EnumParticleTypes;
 
 import javax.sound.midi.*;
 import java.io.File;
@@ -186,7 +187,7 @@ public class MidiHW implements Runnable
                         //                              O r g a n
                         //=========================================================================
 
-                        synchronized (te.getWorldObj())
+                        synchronized (te.getWorld())
                         {
                             for (int i = 0; i < te.smokeOnTimpani.length; i++)
                             {
@@ -196,7 +197,7 @@ public class MidiHW implements Runnable
                                     if (reduceSmoke++ > 1)
                                     {
                                         reduceSmoke = 0;
-                                        smokeIT(2.5, 2.25, 3.5, i / (double) te.smokeOnTimpani.length, "smoke", 0.9, 0);
+                                        smokeIT(2.5, 2.25, 3.5, i / (double) te.smokeOnTimpani.length, EnumParticleTypes.SMOKE_NORMAL, 0.9, 0);
                                     }
                                 }
 
@@ -205,7 +206,7 @@ public class MidiHW implements Runnable
                                     if (reduceMagic++ > 2)
                                     {
                                         reduceMagic = 0;
-                                        smokeIT(2.5, 1.75, 3.5, i / (double) te.smokeOnTimpani.length, "crit", 0.9, 0);
+                                        smokeIT(2.5, 1.75, 3.5, i / (double) te.smokeOnTimpani.length, EnumParticleTypes.CRIT, 0.9, 0);
 
                                     }
                                 }
@@ -215,7 +216,7 @@ public class MidiHW implements Runnable
                                     if (reduceFiddle++ > 2)
                                     {
                                         reduceFiddle = 0;
-                                        smokeIT(2.5, 0.5, 3.5, i / (double) te.smokeOnTimpani.length, "reddust", 2.1, 1);
+                                        smokeIT(2.5, 0.5, 3.5, i / (double) te.smokeOnTimpani.length, EnumParticleTypes.REDSTONE, 2.1, 1);
                                     }
                                 }
 
@@ -224,7 +225,7 @@ public class MidiHW implements Runnable
                                     if (reduceBass++ > 2)
                                     {
                                         reduceBass = 0;
-                                        smokeIT(2.5, 0.5, 3.5, i / (double) te.smokeOnTimpani.length, "slime", 1.7, 1);
+                                        smokeIT(2.5, 0.5, 3.5, i / (double) te.smokeOnTimpani.length, EnumParticleTypes.SLIME, 1.7, 1);
                                     }
                                 }
 
@@ -264,21 +265,20 @@ public class MidiHW implements Runnable
         return chanelInstrament[channel] == sz.getAvailableInstruments()[i.getNo()];
     }
 
-    public void smokeIT(double x, double y, double z, double direction, String particle, double radius, double yVel)
+    public void smokeIT(double x, double y, double z, double direction, EnumParticleTypes particle, double radius, double yVel)
     {
         final double xComp = Math.cos(Math.PI * 2 * direction) + Math.random() * 0.1;
         final double zComp = Math.sin(Math.PI * 2 * direction) + Math.random() * 0.1;
 
         if (te.hasWorldObj())
         {
-            te.getWorldObj().spawnParticle(particle,
-                    te.xCoord + x + xComp * radius + Math.random() * 0.15,
-                    te.yCoord + y + Math.random() * 0.15,
-                    te.zCoord + z + zComp * radius + Math.random() * 0.15,
+            te.getWorld().spawnParticle(particle,
+                    te.getPos().getX() + x + xComp * radius + Math.random() * 0.15,
+                    te.getPos().getY() + y + Math.random() * 0.15,
+                    te.getPos().getZ() + z + zComp * radius + Math.random() * 0.15,
                     xComp * 0.1, yVel, zComp * 0.1);
         }
     }
-
 
     private class EventSieve implements Receiver
     {

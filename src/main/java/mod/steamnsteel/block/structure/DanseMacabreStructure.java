@@ -1,14 +1,9 @@
 package mod.steamnsteel.block.structure;
 
-import com.google.common.collect.ImmutableMap.Builder;
 import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.StructureDefinitionBuilder;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
-import mod.steamnsteel.tileentity.structure.DanseMacabreTE;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
-import mod.steamnsteel.utility.midi.MidiHW;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 import java.util.concurrent.ExecutorService;
@@ -22,10 +17,22 @@ public class DanseMacabreStructure extends SteamNSteelStructureBlock
 
     public DanseMacabreStructure()
     {
-        setBlockName(NAME);
+        setUnlocalizedName(NAME);
     }
 
     @Override
+    public void spawnBreakParticle(World world, SteamNSteelStructureTE te, TripleCoord coord, float sx, float sy, float sz)
+    {
+
+    }
+
+    @Override
+    public StructureDefinitionBuilder getStructureBuild()
+    {
+        return null;
+    }
+
+  /*  @Override
     public void spawnBreakParticle(World world, SteamNSteelStructureTE te, TripleCoord coord, float sx, float sy, float sz)
     {
         //noop
@@ -149,5 +156,5 @@ public class DanseMacabreStructure extends SteamNSteelStructureBlock
 
         return false;
     }
-
+*/
 }

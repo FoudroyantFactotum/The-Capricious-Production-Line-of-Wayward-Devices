@@ -1,19 +1,8 @@
 package mod.steamnsteel.client.renderer.tileentity;
 
-import mod.steamnsteel.block.SteamNSteelStructureBlock;
-import mod.steamnsteel.block.structure.ShearerStructure;
-import mod.steamnsteel.client.renderer.model.ShearerModel;
-import mod.steamnsteel.tileentity.structure.ShearerTE;
-import mod.steamnsteel.utility.Orientation;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.lwjgl.opengl.GL11;
-
-public class ShearerTESR extends SteamNSteelTESR
+public class ShearerTESR //extends SteamNSteelTESR
 {
-    public static final ResourceLocation TEXTURE = getResourceLocation(ShearerStructure.NAME);
+    /*public static final ResourceLocation TEXTURE = getResourceLocation(ShearerStructure.NAME);
     private static ImmutableTriple<Float, Float, Float> SCALE = ImmutableTriple.of(1.0f, 1.0f, 1.0f);
     private static  ImmutableTriple<Float, Float, Float> OFFSET = ImmutableTriple.of(0.0f, -2.0f, 1.0f);
 
@@ -111,5 +100,5 @@ public class ShearerTESR extends SteamNSteelTESR
 
         // Close Render Buffer
         GL11.glPopMatrix();
-    }
+    }*/
 }

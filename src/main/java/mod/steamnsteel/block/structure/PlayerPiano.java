@@ -8,8 +8,12 @@ import mod.steamnsteel.tileentity.structure.PlayerPianoTE;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
 import mod.steamnsteel.utility.log.Logger;
 import mod.steamnsteel.utility.midi.MidiWorker;
+import net.minecraft.block.BlockDirectional;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
 
 public class PlayerPiano extends SteamNSteelStructureBlock
@@ -17,8 +21,15 @@ public class PlayerPiano extends SteamNSteelStructureBlock
     public static final String NAME = "playerpiano";
     public PlayerPiano()
     {
-        setBlockName(NAME);
+        setUnlocalizedName(NAME);
+        setDefaultState(
+                this.blockState
+                        .getBaseState()
+                        .withProperty(BlockDirectional.FACING, EnumFacing.NORTH)
+                        .withProperty(propMirror, false)
+        );
     }
+
     @Override
     public void spawnBreakParticle(World world, SteamNSteelStructureTE te, TripleCoord coord, float sx, float sy, float sz)
     {
@@ -63,17 +74,23 @@ public class PlayerPiano extends SteamNSteelStructureBlock
     }
 
     @Override
-    public TileEntity createNewTileEntity(World world, int meta)
+    public boolean hasTileEntity(IBlockState state)
     {
-        return new PlayerPianoTE(meta);
+        return true;
     }
 
     @Override
-    public boolean onStructureBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float sx, float sy, float sz, TripleCoord sbID, int sbx, int sby, int sbz)
+    public TileEntity createTileEntity(World world, IBlockState state)
+    {
+        return new PlayerPianoTE(getPattern(), (EnumFacing)state.getValue(BlockDirectional.FACING), (Boolean)state.getValue(propMirror));
+    }
+
+     @Override
+    public boolean onStructureBlockActivated(World world, BlockPos pos, EntityPlayer player, BlockPos callPos, EnumFacing side, TripleCoord sbID, float sx, float sy, float sz)
     {
         if (world.isRemote)
         {
-            final PlayerPianoTE te = (PlayerPianoTE) world.getTileEntity(x, y, z);
+            final PlayerPianoTE te = (PlayerPianoTE) world.getTileEntity(pos);
 
             Logger.info("Loading MidiSynth");
             MidiWorker.executor.execute(te.midiWorker);

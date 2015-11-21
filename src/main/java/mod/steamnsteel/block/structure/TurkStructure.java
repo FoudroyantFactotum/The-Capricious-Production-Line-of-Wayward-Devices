@@ -5,9 +5,6 @@ import mod.steamnsteel.block.SteamNSteelStructureBlock;
 import mod.steamnsteel.structure.StructureDefinitionBuilder;
 import mod.steamnsteel.structure.coordinates.TripleCoord;
 import mod.steamnsteel.tileentity.structure.SteamNSteelStructureTE;
-import mod.steamnsteel.tileentity.structure.TurkTE;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 public class TurkStructure extends SteamNSteelStructureBlock
@@ -16,7 +13,7 @@ public class TurkStructure extends SteamNSteelStructureBlock
 
     public TurkStructure()
     {
-        setBlockName(NAME);
+        /*setBlockName(NAME);*/
     }
 
     @Override
@@ -59,7 +56,7 @@ public class TurkStructure extends SteamNSteelStructureBlock
         return builder;
     }
 
-    @Override
+    /*@Override
     public boolean onStructureBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float sx, float sy, float sz, TripleCoord sbID, int sbx, int sby, int sbz)
     {
         if (!world.isRemote)
@@ -79,5 +76,5 @@ public class TurkStructure extends SteamNSteelStructureBlock
     public TileEntity createNewTileEntity(World world, int meta)
     {
         return new TurkTE(meta);
-    }
+    }*/
 }

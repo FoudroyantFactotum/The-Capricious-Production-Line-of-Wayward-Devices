@@ -1,17 +1,8 @@
 package mod.steamnsteel.client.renderer.tileentity;
 
-import mod.steamnsteel.block.structure.DanseMacabreStructure;
-import mod.steamnsteel.client.renderer.model.DanseMacabreModel;
-import mod.steamnsteel.tileentity.structure.DanseMacabreTE;
-import net.minecraft.client.model.ModelBase;
-import net.minecraft.client.model.ModelRenderer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ResourceLocation;
-import org.lwjgl.opengl.GL11;
-
-public class DanseMacabreTESR extends SteamNSteelTESR
+public class DanseMacabreTESR //extends SteamNSteelTESR
 {
-    private ModelTwoJointSkeleton skOne = new ModelTwoJointSkeleton();
+    /*private ModelTwoJointSkeleton skOne = new ModelTwoJointSkeleton();
     private ModelTwoJointSkeleton skTwo = new ModelTwoJointSkeleton();
     private DanseMacabreModel strucure = new DanseMacabreModel();
 
@@ -175,5 +166,5 @@ public class DanseMacabreTESR extends SteamNSteelTESR
             stickBase.rotateAngleX = -90 + (float) (0.8 * pos);
         }
 
-    }
+    }*/
 }

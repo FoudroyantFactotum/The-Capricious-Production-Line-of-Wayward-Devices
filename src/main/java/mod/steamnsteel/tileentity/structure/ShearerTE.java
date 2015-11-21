@@ -1,29 +1,8 @@
 package mod.steamnsteel.tileentity.structure;
 
-import mod.steamnsteel.block.structure.ShearerStructure;
-import mod.steamnsteel.structure.coordinates.TripleCoord;
-import mod.steamnsteel.tileentity.SteamNSteelTE;
-import net.minecraft.block.Block;
-import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.passive.EntitySheep;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraftforge.common.util.ForgeDirection;
-import net.minecraftforge.fluids.Fluid;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidTankInfo;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import static mod.steamnsteel.block.SteamNSteelStructureBlock.isMirrored;
-import static mod.steamnsteel.structure.coordinates.TransformLAG.localToGlobal;
-import static mod.steamnsteel.utility.Orientation.getdecodedOrientation;
-
-public class ShearerTE extends SteamNSteelStructureTE
+public class ShearerTE extends StructureTemplate
 {
+    /*
     private final TripleCoord pipeConnectLocation = TripleCoord.of(0,0,0);
     public float wheelRotation = 0.0f;
     public boolean isActive = false;
@@ -248,7 +227,190 @@ public class ShearerTE extends SteamNSteelStructureTE
             if (armPos < 60)
                 armPos += 1;
             else if (coolDown) {
-                isActive = false;
+                isActiv //================================================================
+    //                     I T E M   I N P U T
+    //================================================================
+
+    @Override
+    public int getSizeInventory()
+    {
+        return 0;
+    }
+
+    @Override
+    public ItemStack getStackInSlot(int slotIndex)
+    {
+        return null;
+    }
+
+    @Override
+    public ItemStack decrStackSize(int slotIndex, int decrAmount)
+    {
+        return null;
+    }
+
+    @Override
+    public ItemStack getStackInSlotOnClosing(int slotIndex)
+    {
+        return null;
+    }
+
+    @Override
+    public void setInventorySlotContents(int slotIndex, ItemStack itemStack)
+    {
+        //noop
+    }
+
+    @Override
+    public String getInventoryName()
+    {
+        return SteamNSteelTE.containerName(PlayerPiano.NAME);
+    }
+
+    @Override
+    public boolean hasCustomInventoryName()
+    {
+        return false;
+    }
+
+    @Override
+    public int getInventoryStackLimit()
+    {
+        return -1;
+    }
+
+    @Override
+    public boolean isUseableByPlayer(EntityPlayer player)
+    {
+        return false;
+    }
+
+    @Override
+    public void openInventory()
+    {
+        //no op
+    }
+
+    @Override
+    public void closeInventory()
+    {
+        //no op
+    }
+
+    @Override
+    public boolean isItemValidForSlot(int slotIndex, ItemStack itemStack)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean canStructureInsertItem(int slot, ItemStack item, int side, TripleCoord blockID)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean canStructureExtractItem(int slot, ItemStack item, int side, TripleCoord blockID)
+    {
+        return false;
+    }
+
+    @Override
+    public int[] getAccessibleSlotsFromStructureSide(int side, TripleCoord blockID)
+    {
+        return new int[0];
+    }
+
+    //================================================================
+    //                  F L U I D   H A N D L E R
+    //================================================================
+
+    @Override
+    public boolean canStructureFill(ForgeDirection from, Fluid fluid, TripleCoord blockID)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean canStructureDrain(ForgeDirection from, Fluid fluid, TripleCoord blockID)
+    {
+        return false;
+    }
+
+    @Override
+    public int structureFill(ForgeDirection from, FluidStack resource, boolean doFill, TripleCoord blockID)
+    {
+        return 0;
+    }
+
+    @Override
+    public FluidStack structureDrain(ForgeDirection from, FluidStack resource, boolean doDrain, TripleCoord blockID)
+    {
+        return null;
+    }
+
+    @Override
+    public FluidStack structureDrain(ForgeDirection from, int maxDrain, boolean doDrain, TripleCoord blockID)
+    {
+        return null;
+    }
+
+    @Override
+    public FluidTankInfo[] getStructureTankInfo(ForgeDirection from, TripleCoord blockID)
+    {
+        return emptyFluidTankInfo;
+    }
+    //================================================================
+    //                 P I P E   C O N E C T I O N
+    //================================================================
+
+    @Override
+    public boolean isStructureSideConnected(ForgeDirection opposite, TripleCoord blockID)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean tryStructureConnect(ForgeDirection opposite, TripleCoord blockID)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean canStructureConnect(ForgeDirection opposite, TripleCoord blockID)
+    {
+        return false;
+    }
+
+    @Override
+    public void disconnectStructure(ForgeDirection opposite, TripleCoord blockID)
+    {
+
+    }
+
+    //================================================================
+    //                            N B T
+    //================================================================
+
+    @Override
+    public void readFromNBT(NBTTagCompound nbt)
+    {
+        super.readFromNBT(nbt);
+
+    }
+
+    @Override
+    public void writeToNBT(NBTTagCompound nbt)
+    {
+        super.writeToNBT(nbt);
+
+    }
+
+    @Override
+    protected void transformDirectionsOnLoad()
+    {
+
+    }e = false;
             }
         } else {
             if (armPos > 1)
@@ -289,5 +451,5 @@ public class ShearerTE extends SteamNSteelStructureTE
     @Override
     public FluidTankInfo[] getStructureTankInfo(ForgeDirection from, TripleCoord blockID) {
         return new FluidTankInfo[0];
-    }
+    }*/
 }
